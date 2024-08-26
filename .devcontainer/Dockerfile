@@ -7,11 +7,10 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get autoremove -y && apt-get clean -y
 
 RUN rustup component add rustfmt rust-docs clippy
+RUN rustup update stable
 
-RUN cargo install sqlx-cli --no-default-features --features native-tls,sqlite
-
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
+# Tried to install latest (0.8.1 at the time of writing this), but it has a bug
+RUN cargo install sqlx-cli@0.8.0 --no-default-features --features native-tls,sqlite
 
 USER vscode
 

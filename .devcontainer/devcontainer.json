@@ -16,8 +16,6 @@
                 "esbenp.prettier-vscode",
                 "fill-labs.dependi",
                 "ms-azuretools.vscode-docker",
-                "mtxr.sqltools",
-                "mtxr.sqltools-driver-sqlite",
                 "oderwat.indent-rainbow"
             ]
         }
