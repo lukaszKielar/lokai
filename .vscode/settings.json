@@ -1,0 +1,73 @@
+{
+    "[dockercompose]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "editor.tabSize": 4,
+        "prettier.tabWidth": 4,
+        "prettier.useTabs": false
+    },
+    "[dockerfile]": {
+        "editor.formatOnSave": true
+    },
+    "[json]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "always",
+            "source.organizeImports": "always"
+        },
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
+    "[jsonc]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "always",
+            "source.organizeImports": "always"
+        },
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
+    "[markdown]": {
+        "editor.formatOnSave": true
+    },
+    "[rust]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "always",
+            "source.organizeImports": "always"
+        },
+        "editor.defaultFormatter": "rust-lang.rust-analyzer",
+        "editor.formatOnSave": true
+    },
+    "[toml]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "always",
+            "source.organizeImports": "always"
+        },
+        "editor.defaultFormatter": "tamasfe.even-better-toml",
+        "editor.formatOnSave": true
+    },
+    "editor.detectIndentation": false,
+    "editor.indentSize": "tabSize",
+    "editor.quickSuggestions": {
+        "strings": "on"
+    },
+    "editor.renderFinalNewline": "dimmed",
+    "editor.renderLineHighlight": "all",
+    "editor.renderWhitespace": "all",
+    "editor.tabSize": 4,
+    "editor.trimAutoWhitespace": true,
+    "files.trimFinalNewlines": true,
+    "files.trimTrailingWhitespace": true,
+    "prettier.tabWidth": 4,
+    "prettier.trailingComma": "es5",
+    "prettier.useTabs": false,
+    "rust-analyzer.showUnlinkedFileNotification": false,
+    "sqltools.connections": [
+        {
+            "database": "db.sqlite3",
+            "driver": "SQLite",
+            "name": "localhost",
+            "previewLimit": 50
+        }
+    ],
+    "sqltools.useNodeRuntime": true,
+    "workbench.editor.highlightModifiedTabs": true
+}

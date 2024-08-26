@@ -1,0 +1,12 @@
+[package]
+name = "lokai-tui"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Lukasz Kielar <kielar.lukasz@hotmail.com>"]
+
+[dependencies]
+crossterm = { version = "0.28", features = ["event-stream"] }
+futures = "0.3"
+ratatui = "0.28"
+tokio = { version = "1", features = ["full"] }
