@@ -1,34 +1,40 @@
 use ratatui::{
-    layout::Alignment,
-    style::{Color, Style},
+    layout::{Alignment, Constraint, Direction, Layout},
     widgets::{Block, BorderType, Paragraph},
     Frame,
 };
 
 use crate::app::App;
 
-/// Renders the user interface widgets.
-pub fn render(app: &mut App, frame: &mut Frame) {
-    // This is where you add new widgets.
-    // See the following resources:
-    // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
-    // - https://github.com/ratatui/ratatui/tree/master/examples
+pub fn render(_app: &mut App, frame: &mut Frame) {
+    let area = frame.area();
+
+    let layout = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(vec![Constraint::Percentage(20), Constraint::Percentage(80)])
+        .split(area);
+
     frame.render_widget(
-        Paragraph::new(format!(
-            "This is a tui template.\n\
-                Press `Esc`, `Ctrl-C` or `q` to stop running.\n\
-                Press left and right to increment and decrement the counter respectively.\n\
-                Counter: {}",
-            app.counter
-        ))
-        .block(
-            Block::bordered()
-                .title("Template")
-                .title_alignment(Alignment::Center)
-                .border_type(BorderType::Rounded),
-        )
-        .style(Style::default().fg(Color::Cyan).bg(Color::Black))
-        .centered(),
-        frame.area(),
+        Paragraph::new("AAA")
+            .block(
+                Block::bordered()
+                    .title("Conversations")
+                    .title_alignment(Alignment::Left)
+                    .border_type(BorderType::Rounded),
+            )
+            .centered(),
+        layout[0],
+    );
+    frame.render_widget(
+        Paragraph::new("BBB")
+            .alignment(Alignment::Left)
+            .block(
+                Block::bordered()
+                    .title("Messages")
+                    .title_alignment(Alignment::Left)
+                    .border_type(BorderType::Rounded),
+            )
+            .centered(),
+        layout[1],
     )
 }

@@ -60,14 +60,8 @@
     "prettier.trailingComma": "es5",
     "prettier.useTabs": false,
     "rust-analyzer.showUnlinkedFileNotification": false,
-    "sqltools.connections": [
-        {
-            "database": "db.sqlite3",
-            "driver": "SQLite",
-            "name": "localhost",
-            "previewLimit": 50
-        }
-    ],
-    "sqltools.useNodeRuntime": true,
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.linkedProjects": ["./Cargo.toml"],
+    "rust-analyzer.typing.autoClosingAngleBrackets.enable": true,
     "workbench.editor.highlightModifiedTabs": true
 }
