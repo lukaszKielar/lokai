@@ -1,7 +1,7 @@
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Style, Stylize},
-    widgets::{Block, BorderType, List, ListDirection, ListItem, Paragraph},
+    widgets::{Block, BorderType, List, ListDirection, ListItem},
     Frame,
 };
 
@@ -23,7 +23,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .conversation_list
         .items
         .iter()
-        .map(|elem| ListItem::new(elem.as_str()))
+        .map(|elem| elem.to_owned().into())
         .collect::<Vec<ListItem>>();
     let conversations = List::new(items)
         .block(
@@ -46,22 +46,26 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .direction(Direction::Vertical)
         .constraints(vec![
             Constraint::Percentage(100),
-            Constraint::Min(10),
+            Constraint::Min(7),
             Constraint::Max(10),
         ])
         .split(chunks[1]);
-    let messages = Paragraph::new("CHAT")
-        .block(
-            Block::bordered()
-                .title("CHAT")
-                .title_alignment(Alignment::Left)
-                .border_type(match app.current_focus() {
-                    AppFocus::Messages => FOCUS_BORDER_TYPE,
-                    _ => NORMAL_BORDER_TYPE,
-                }),
-        )
-        .centered();
-    frame.render_widget(messages, messages_layout[0]);
+    let items = app
+        .message_list
+        .items
+        .iter()
+        .map(|elem| elem.to_owned().into())
+        .collect::<Vec<ListItem>>();
+    let messages = List::new(items).block(
+        Block::bordered()
+            .title("CHAT")
+            .title_alignment(Alignment::Left)
+            .border_type(match app.current_focus() {
+                AppFocus::Messages => FOCUS_BORDER_TYPE,
+                _ => NORMAL_BORDER_TYPE,
+            }),
+    );
+    frame.render_stateful_widget(messages, messages_layout[0], &mut app.message_list.state);
 
     // TODO: I need to put text to new line when it reaches width of the block
     app.prompt.text_area.set_block(

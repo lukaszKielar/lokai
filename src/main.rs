@@ -1,6 +1,7 @@
-use std::io;
+use std::{env, io};
 
 use ratatui::{backend::CrosstermBackend, Terminal};
+use sqlx::sqlite::SqlitePoolOptions;
 
 use crate::{
     app::{App, AppResult},
@@ -11,6 +12,8 @@ use crate::{
 
 pub mod app;
 pub mod config;
+// TODO: rename to crud
+pub mod db;
 pub mod event;
 pub mod handler;
 pub mod prompt;
@@ -19,7 +22,14 @@ pub mod ui;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
+    let sqlite = SqlitePoolOptions::new()
+        .max_connections(10)
+        .connect(&env::var("DATABASE_URL").unwrap_or("sqlite://db.sqlite3".to_string()))
+        .await
+        .expect("Cannot make a DB pool");
+
     let mut app: App = Default::default();
+    app.init(sqlite).await?;
 
     let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend)?;
@@ -31,7 +41,7 @@ async fn main() -> AppResult<()> {
         tui.draw(&mut app)?;
 
         match tui.events.next().await? {
-            Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
+            Event::Key(key_event) => handle_key_events(key_event, &mut app).await?,
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
             Event::Tick => {}
