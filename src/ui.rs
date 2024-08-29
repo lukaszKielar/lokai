@@ -36,7 +36,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
                 }),
         )
         .highlight_style(Style::default().bold())
-        .highlight_symbol(">>")
+        .highlight_symbol(">> ")
         .repeat_highlight_symbol(true)
         .direction(ListDirection::TopToBottom);
     frame.render_stateful_widget(conversations, chunks[0], &mut app.conversation_list.state);
@@ -46,8 +46,8 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .direction(Direction::Vertical)
         .constraints(vec![
             Constraint::Percentage(100),
-            Constraint::Min(5),
-            Constraint::Max(5),
+            Constraint::Min(10),
+            Constraint::Max(10),
         ])
         .split(chunks[1]);
     let messages = Paragraph::new("CHAT")
@@ -63,16 +63,15 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .centered();
     frame.render_widget(messages, messages_layout[0]);
 
-    let prompt = Paragraph::new("PROMPT")
-        .block(
-            Block::bordered()
-                .title("PROMPT")
-                .title_alignment(Alignment::Left)
-                .border_type(match app.current_focus() {
-                    AppFocus::Prompt => FOCUS_BORDER_TYPE,
-                    _ => NORMAL_BORDER_TYPE,
-                }),
-        )
-        .centered();
-    frame.render_widget(prompt, messages_layout[1]);
+    // TODO: I need to put text to new line when it reaches width of the block
+    app.prompt.text_area.set_block(
+        Block::bordered()
+            .title("PROMPT")
+            .title_alignment(Alignment::Left)
+            .border_type(match app.current_focus() {
+                AppFocus::Prompt => FOCUS_BORDER_TYPE,
+                _ => NORMAL_BORDER_TYPE,
+            }),
+    );
+    frame.render_widget(&app.prompt.text_area, messages_layout[1]);
 }

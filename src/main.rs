@@ -13,6 +13,7 @@ pub mod app;
 pub mod config;
 pub mod event;
 pub mod handler;
+pub mod prompt;
 pub mod tui;
 pub mod ui;
 

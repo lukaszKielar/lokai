@@ -3,6 +3,7 @@ use std::error;
 use ratatui::widgets::ListState;
 
 use crate::config::Config;
+use crate::prompt::Prompt;
 
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -49,6 +50,7 @@ pub struct App {
     _config: Config,
     pub conversation_list: ConversationList,
     focus: AppFocus,
+    pub prompt: Prompt<'static>,
 }
 
 impl Default for App {
@@ -61,6 +63,7 @@ impl Default for App {
                 state: Default::default(),
             },
             focus: Default::default(),
+            prompt: Default::default(),
         }
     }
 }
