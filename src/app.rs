@@ -4,26 +4,25 @@ use ratatui::widgets::ListState;
 use sqlx::SqlitePool;
 
 use crate::config::Config;
-use crate::db::get_conversations;
+use crate::crud::get_conversations;
+use crate::models::{Conversation, Message};
 use crate::prompt::Prompt;
 
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 // TODO: remove pub from attrs
 // TODO: create common StatefulList trait and implement it for ConversationList and MessageList
-// TODO: this should keep vec of Conversation (DB model)
 #[derive(Debug, Default)]
 pub struct ConversationList {
-    pub items: Vec<String>,
+    pub items: Vec<Conversation>,
     pub state: ListState,
 }
 
 // TODO: remove pub from attrs
 // TODO: create common StatefulList trait and implement it for ConversationList and MessageList
-// TODO: this should keep vec of Message (DB model)
 #[derive(Debug, Default)]
 pub struct MessageList {
-    pub items: Vec<String>,
+    pub items: Vec<Message>,
     pub state: ListState,
 }
 
@@ -86,11 +85,7 @@ impl Default for App {
 impl App {
     pub async fn init(&mut self, sqlite: SqlitePool) -> AppResult<()> {
         self.sqlite.replace(sqlite);
-        let conversations = get_conversations(self.sqlite.as_ref().unwrap().clone())
-            .await?
-            .iter()
-            .map(|elem| elem.name.to_owned())
-            .collect();
+        let conversations = get_conversations(self.sqlite.as_ref().unwrap().clone()).await?;
         self.conversation_list.items = conversations;
 
         Ok(())

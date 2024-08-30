@@ -12,10 +12,10 @@ use crate::{
 
 pub mod app;
 pub mod config;
-// TODO: rename to crud
-pub mod db;
+pub mod crud;
 pub mod event;
 pub mod handler;
+pub mod models;
 pub mod prompt;
 pub mod tui;
 pub mod ui;

@@ -23,7 +23,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .conversation_list
         .items
         .iter()
-        .map(|elem| elem.to_owned().into())
+        .map(|elem| elem.name.to_owned().into())
         .collect::<Vec<ListItem>>();
     let conversations = List::new(items)
         .block(
@@ -54,7 +54,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .message_list
         .items
         .iter()
-        .map(|elem| elem.to_owned().into())
+        .map(|elem| elem.content.to_owned().into())
         .collect::<Vec<ListItem>>();
     let messages = List::new(items).block(
         Block::bordered()
