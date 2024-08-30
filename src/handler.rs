@@ -37,13 +37,9 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
                 app.conversation_list.state.scroll_down_by(1);
                 if let Some(current_index) = app.conversation_list.state.selected() {
                     if let Some(item) = app.conversation_list.items.get(current_index) {
-                        if item.name == "conversation 1" {
-                            let messages =
-                                get_messages(app.sqlite.as_ref().unwrap().clone(), 1).await?;
-                            app.message_list.items = messages;
-                        } else {
-                            app.message_list.items = vec![];
-                        }
+                        let messages =
+                            get_messages(app.sqlite.as_ref().unwrap().clone(), item.id).await?;
+                        app.message_list.items = messages;
                     }
                 };
             }
@@ -57,13 +53,9 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
                 app.conversation_list.state.scroll_up_by(1);
                 if let Some(current_index) = app.conversation_list.state.selected() {
                     if let Some(item) = app.conversation_list.items.get(current_index) {
-                        if item.name == "conversation 1" {
-                            let messages =
-                                get_messages(app.sqlite.as_ref().unwrap().clone(), 1).await?;
-                            app.message_list.items = messages;
-                        } else {
-                            app.message_list.items = vec![];
-                        }
+                        let messages =
+                            get_messages(app.sqlite.as_ref().unwrap().clone(), item.id).await?;
+                        app.message_list.items = messages;
                     }
                 };
             }
@@ -73,8 +65,11 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
             }
         },
         KeyCode::Esc => match app.current_focus() {
-            AppFocus::Conversation => app.conversation_list.state.select(None),
-            AppFocus::Messages => {}
+            AppFocus::Conversation => {
+                app.conversation_list.state.select(None);
+                app.message_list.items = vec![];
+            }
+            AppFocus::Messages => app.message_list.state.select(None),
             AppFocus::Prompt => {}
         },
         KeyCode::Tab => app.next_focus(),

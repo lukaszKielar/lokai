@@ -2,6 +2,7 @@ use std::{env, io};
 
 use ratatui::{backend::CrosstermBackend, Terminal};
 use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::Executor;
 
 use crate::{
     app::{App, AppResult},
@@ -23,8 +24,15 @@ pub mod ui;
 #[tokio::main]
 async fn main() -> AppResult<()> {
     let sqlite = SqlitePoolOptions::new()
+        .min_connections(2)
         .max_connections(10)
-        .connect(&env::var("DATABASE_URL").unwrap_or("sqlite://db.sqlite3".to_string()))
+        .after_connect(|conn, _meta| {
+            Box::pin(async move {
+                conn.execute("PRAGMA foreign_keys = ON;").await?;
+                Ok(())
+            })
+        })
+        .connect(&env::var("DATABASE_URL").unwrap_or("sqlite::memory:".to_string()))
         .await
         .expect("Cannot make a DB pool");
 

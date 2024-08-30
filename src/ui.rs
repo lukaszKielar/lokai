@@ -36,7 +36,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
                 }),
         )
         .highlight_style(Style::default().bold())
-        .highlight_symbol(">> ")
+        .highlight_symbol("👉 ")
         .repeat_highlight_symbol(true)
         .direction(ListDirection::TopToBottom);
     frame.render_stateful_widget(conversations, chunks[0], &mut app.conversation_list.state);
@@ -54,17 +54,22 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .message_list
         .items
         .iter()
-        .map(|elem| elem.content.to_owned().into())
+        .map(|elem| elem.into())
         .collect::<Vec<ListItem>>();
-    let messages = List::new(items).block(
-        Block::bordered()
-            .title("CHAT")
-            .title_alignment(Alignment::Left)
-            .border_type(match app.current_focus() {
-                AppFocus::Messages => FOCUS_BORDER_TYPE,
-                _ => NORMAL_BORDER_TYPE,
-            }),
-    );
+    let messages = List::new(items)
+        .block(
+            Block::bordered()
+                .title("CHAT")
+                .title_alignment(Alignment::Left)
+                .border_type(match app.current_focus() {
+                    AppFocus::Messages => FOCUS_BORDER_TYPE,
+                    _ => NORMAL_BORDER_TYPE,
+                }),
+        )
+        .highlight_style(Style::default().bold())
+        .highlight_symbol("👉 ")
+        .repeat_highlight_symbol(true)
+        .direction(ListDirection::TopToBottom);
     frame.render_stateful_widget(messages, messages_layout[0], &mut app.message_list.state);
 
     // TODO: I need to put text to new line when it reaches width of the block
