@@ -2,7 +2,8 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
     app::{App, AppFocus, AppResult},
-    crud::get_messages,
+    crud::{create_message, get_messages},
+    models::Role,
 };
 
 /// Some key events are associated with specific focus blocks, other events work globally
@@ -24,8 +25,21 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
                 if key_event.modifiers == KeyModifiers::SHIFT {
                     app.prompt.text_area.input(key_event);
                 } else {
-                    // TODO: 1. get text, 2. send text to inference thread, 3. clear input
-                    app.prompt.clear();
+                    // we're able to send only when we have selected conversation
+                    if let Some(conversation) = app.conversation_list.currently_selected() {
+                        // TODO: 1. get text, 2. send text to inference thread, 3. clear input
+                        let user_input = app.prompt.text_area.lines().join("\n").trim().to_string();
+                        let user_message = create_message(
+                            app.sqlite.clone(),
+                            Role::User,
+                            user_input,
+                            conversation.id,
+                        )
+                        .await?;
+                        app.prompt.inference_tx.send(user_message.clone()).await?;
+                        app.message_list.items.push(user_message);
+                        app.prompt.clear();
+                    }
                 }
             }
         }
@@ -37,8 +51,7 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
                 app.conversation_list.state.scroll_down_by(1);
                 if let Some(current_index) = app.conversation_list.state.selected() {
                     if let Some(item) = app.conversation_list.items.get(current_index) {
-                        let messages =
-                            get_messages(app.sqlite.as_ref().unwrap().clone(), item.id).await?;
+                        let messages = get_messages(app.sqlite.clone(), item.id).await?;
                         app.message_list.items = messages;
                     }
                 };
@@ -53,8 +66,7 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
                 app.conversation_list.state.scroll_up_by(1);
                 if let Some(current_index) = app.conversation_list.state.selected() {
                     if let Some(item) = app.conversation_list.items.get(current_index) {
-                        let messages =
-                            get_messages(app.sqlite.as_ref().unwrap().clone(), item.id).await?;
+                        let messages = get_messages(app.sqlite.clone(), item.id).await?;
                         app.message_list.items = messages;
                     }
                 };
@@ -80,5 +92,9 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
             }
         }
     }
+    Ok(())
+}
+
+pub async fn handle_tick_events(app: &mut App) -> AppResult<()> {
     Ok(())
 }

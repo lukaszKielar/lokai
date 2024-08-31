@@ -3,14 +3,14 @@ use ratatui::text::Text;
 use serde::{Deserialize, Serialize};
 use sqlx::{sqlite::SqliteRow, FromRow, Row};
 
-#[derive(Serialize, Deserialize, FromRow, Debug)]
+#[derive(Serialize, Deserialize, FromRow, Debug, Clone)]
 pub struct Conversation {
-    pub id: i64,
+    pub id: u32,
     pub name: String,
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Role {
     #[serde(rename = "assistant")]
     Assistant,
@@ -20,9 +20,19 @@ pub enum Role {
     User,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+impl core::fmt::Display for Role {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Role::Assistant => write!(f, "assistant"),
+            Role::System => write!(f, "system"),
+            Role::User => write!(f, "user"),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Message {
-    pub id: i64,
+    pub id: u32,
     pub role: Role,
     pub content: String,
     pub conversation_id: i64,

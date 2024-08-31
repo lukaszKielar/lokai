@@ -1,5 +1,6 @@
 use std::{env, io};
 
+use handler::handle_tick_events;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::Executor;
@@ -17,6 +18,7 @@ pub mod crud;
 pub mod event;
 pub mod handler;
 pub mod models;
+pub mod ollama;
 pub mod prompt;
 pub mod tui;
 pub mod ui;
@@ -36,8 +38,8 @@ async fn main() -> AppResult<()> {
         .await
         .expect("Cannot make a DB pool");
 
-    let mut app: App = Default::default();
-    app.init(sqlite).await?;
+    let mut app: App = App::new(sqlite);
+    app.init().await?;
 
     let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend)?;
@@ -52,7 +54,7 @@ async fn main() -> AppResult<()> {
             Event::Key(key_event) => handle_key_events(key_event, &mut app).await?,
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
-            Event::Tick => {}
+            Event::Tick => handle_tick_events(&mut app).await?,
         }
     }
 
