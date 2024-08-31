@@ -1,19 +1,16 @@
 use std::{env, io};
 
-use handler::handle_tick_events;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::Executor;
+use tokio::sync::mpsc;
 
-use crate::{
-    app::{App, AppResult},
-    event::{Event, EventHandler},
-    handler::handle_key_events,
-    tui::Tui,
-};
+use crate::app::{App, AppResult};
+use crate::event::{Event, EventHandler};
+use crate::handler::handle_key_events;
+use crate::tui::Tui;
 
 pub mod app;
-pub mod config;
 pub mod crud;
 pub mod event;
 pub mod handler;
@@ -38,12 +35,14 @@ async fn main() -> AppResult<()> {
         .await
         .expect("Cannot make a DB pool");
 
-    let mut app: App = App::new(sqlite);
+    let (event_tx, event_rx) = mpsc::unbounded_channel();
+
+    let mut app: App = App::new(sqlite, event_tx.clone());
     app.init().await?;
 
     let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend)?;
-    let events = EventHandler::new(250);
+    let events = EventHandler::new(250, event_tx, event_rx);
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
 
@@ -51,10 +50,11 @@ async fn main() -> AppResult<()> {
         tui.draw(&mut app)?;
 
         match tui.events.next().await? {
+            Event::Tick => {}
             Event::Key(key_event) => handle_key_events(key_event, &mut app).await?,
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
-            Event::Tick => handle_tick_events(&mut app).await?,
+            Event::Inference(message) => println!("{:?}", message),
         }
     }
 

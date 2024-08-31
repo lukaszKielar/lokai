@@ -35,7 +35,7 @@ pub struct Message {
     pub id: u32,
     pub role: Role,
     pub content: String,
-    pub conversation_id: i64,
+    pub conversation_id: u32,
     pub created_at: DateTime<Utc>,
 }
 
@@ -43,8 +43,8 @@ impl<'a> From<&Message> for Text<'a> {
     fn from(val: &Message) -> Self {
         let icon = match val.role {
             Role::Assistant => "🤖",
-            Role::System => "⚙️",
-            Role::User => "🤔",
+            Role::System => "🧰",
+            Role::User => "👤",
         };
         format!("{} {}", icon, val.content).into()
     }
@@ -65,11 +65,8 @@ impl FromRow<'_, SqliteRow> for Message {
             Ok(other) => {
                 return Err(sqlx::Error::ColumnDecode {
                     index: "role".to_string(),
-                    source: format!(
-                        "Expected one of [assistant, system, user], got [{:?}]",
-                        other
-                    )
-                    .into(),
+                    source: format!("Expected one of [assistant, system, user], got [{}]", other)
+                        .into(),
                 })
             }
             Err(err) => return Err(err),

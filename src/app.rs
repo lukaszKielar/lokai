@@ -4,16 +4,17 @@ use ratatui::widgets::ListState;
 use sqlx::SqlitePool;
 use tokio::sync::mpsc;
 
-use crate::config::Config;
 use crate::crud::get_conversations;
+use crate::event::Event;
 use crate::models::{Conversation, Message};
+use crate::ollama::Ollama;
 use crate::prompt::Prompt;
 
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 // TODO: remove pub from attrs
 // TODO: create common StatefulList trait and implement it for ConversationList and MessageList
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct ConversationList {
     pub items: Vec<Conversation>,
     pub state: ListState,
@@ -28,13 +29,13 @@ impl ConversationList {
 
 // TODO: remove pub from attrs
 // TODO: create common StatefulList trait and implement it for ConversationList and MessageList
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct MessageList {
     pub items: Vec<Message>,
     pub state: ListState,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub enum AppFocus {
     Conversation,
     Messages,
@@ -65,30 +66,27 @@ impl AppFocus {
     }
 }
 
-#[derive(Debug)]
 pub struct App {
     pub sqlite: SqlitePool,
     pub running: bool,
-    _config: Config,
     pub conversation_list: ConversationList,
     pub message_list: MessageList,
     focus: AppFocus,
     pub prompt: Prompt<'static>,
-    inference_rx: mpsc::Receiver<Message>,
+    pub ollama: Ollama,
 }
 
 impl App {
-    pub fn new(sqlite: SqlitePool) -> Self {
-        let (tx, rx) = mpsc::channel(10);
+    pub fn new(sqlite: SqlitePool, event_tx: mpsc::UnboundedSender<Event>) -> Self {
+        let (inference_tx, mut inference_rx) = mpsc::channel::<Message>(10);
         Self {
-            sqlite,
+            sqlite: sqlite.clone(),
             running: true,
-            _config: Default::default(),
             conversation_list: Default::default(),
             message_list: Default::default(),
             focus: Default::default(),
-            prompt: Prompt::new(tx),
-            inference_rx: rx,
+            prompt: Prompt::new(inference_tx),
+            ollama: Ollama::new(sqlite, inference_rx, event_tx),
         }
     }
 
@@ -113,9 +111,5 @@ impl App {
 
     pub fn previous_focus(&mut self) {
         self.focus = self.focus.previous();
-    }
-
-    pub async fn down_conversation(&mut self) {
-        self.conversation_list.state.scroll_down_by(1);
     }
 }

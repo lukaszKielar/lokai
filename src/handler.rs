@@ -1,9 +1,14 @@
+use std::time::Duration;
+
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use futures::StreamExt;
+use tokio::time;
 
 use crate::{
     app::{App, AppFocus, AppResult},
-    crud::{create_message, get_messages},
+    crud::{create_message, get_messages, update_message},
     models::Role,
+    ollama::{OllamaChatParams, OllamaChatResponseStream},
 };
 
 /// Some key events are associated with specific focus blocks, other events work globally
@@ -92,9 +97,5 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
             }
         }
     }
-    Ok(())
-}
-
-pub async fn handle_tick_events(app: &mut App) -> AppResult<()> {
     Ok(())
 }

@@ -54,3 +54,24 @@ pub async fn create_message(
 
     Ok(new_message)
 }
+
+pub async fn update_message(
+    sqlite: SqlitePool,
+    content: String,
+    message_id: u32,
+) -> AppResult<Message> {
+    let updated_message: Message = sqlx::query_as(
+        r#"
+        UPDATE messages
+        SET content = ?1
+        WHERE id = ?2
+        RETURNING *
+        "#,
+    )
+    .bind(content)
+    .bind(message_id)
+    .fetch_one(&sqlite)
+    .await?;
+
+    Ok(updated_message)
+}
