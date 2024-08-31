@@ -33,6 +33,7 @@ pub async fn get_messages(sqlite: SqlitePool, conversation_id: u32) -> AppResult
     Ok(items)
 }
 
+// TODO: fix transactions
 pub async fn create_message(
     sqlite: SqlitePool,
     role: Role,
@@ -55,6 +56,7 @@ pub async fn create_message(
     Ok(new_message)
 }
 
+// TODO: fix transactions
 pub async fn update_message(
     sqlite: SqlitePool,
     content: String,

@@ -78,7 +78,7 @@ pub struct App {
 
 impl App {
     pub fn new(sqlite: SqlitePool, event_tx: mpsc::UnboundedSender<Event>) -> Self {
-        let (inference_tx, mut inference_rx) = mpsc::channel::<Message>(10);
+        let (inference_tx, inference_rx) = mpsc::channel::<Message>(10);
         Self {
             sqlite: sqlite.clone(),
             running: true,

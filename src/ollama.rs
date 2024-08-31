@@ -13,7 +13,7 @@ static DEFAULT_LLM_MODEL: &str = "phi3:3.8b";
 static OLLAMA_URL: &str = "http://host.docker.internal:11434";
 
 pub struct Ollama {
-    join_handle: JoinHandle<()>,
+    _join_handle: JoinHandle<()>,
 }
 
 impl Ollama {
@@ -24,9 +24,11 @@ impl Ollama {
     ) -> Self {
         let join_handle = tokio::spawn(async move {
             let reqwest_client = reqwest::Client::new();
-            inference(sqlite, inference_rx, event_tx, reqwest_client).await;
+            let _ = inference(sqlite, inference_rx, event_tx, reqwest_client).await;
         });
-        Self { join_handle }
+        Self {
+            _join_handle: join_handle,
+        }
     }
 }
 
@@ -73,6 +75,7 @@ impl OllamaChatParams {
     }
 }
 
+// TODO: create streaming version of inference
 async fn inference(
     sqlite: SqlitePool,
     mut inference_rx: mpsc::Receiver<Message>,
@@ -105,7 +108,7 @@ async fn inference(
 
         transaction.commit().await?;
 
-        event_tx.send(Event::Inference(assistant_response));
+        let _ = event_tx.send(Event::Inference(assistant_response));
     }
 
     Ok(())
