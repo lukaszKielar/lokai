@@ -48,6 +48,7 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
                 // 3. mutate state of app by assigning messages to proper attr
                 app.conversation_list.state.scroll_down_by(1);
                 if let Some(current_index) = app.conversation_list.state.selected() {
+                    app.message_list.state.select(None);
                     if let Some(item) = app.conversation_list.items.get(current_index) {
                         let messages = get_messages(app.sqlite.clone(), item.id).await?;
                         app.message_list.items = messages;

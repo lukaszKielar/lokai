@@ -1,9 +1,7 @@
-use ratatui::{
-    layout::{Alignment, Constraint, Direction, Layout},
-    style::{Style, Stylize},
-    widgets::{Block, BorderType, List, ListDirection, ListItem},
-    Frame,
-};
+use ratatui::layout::{Alignment, Constraint, Direction, Layout};
+use ratatui::style::{Style, Stylize};
+use ratatui::widgets::{Block, BorderType, List, ListDirection, ListItem};
+use ratatui::Frame;
 
 const FOCUS_BORDER_TYPE: BorderType = BorderType::Double;
 const NORMAL_BORDER_TYPE: BorderType = BorderType::Rounded;
@@ -54,7 +52,10 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .message_list
         .items
         .iter()
-        .map(|elem| elem.into())
+        .map(|elem| {
+            let width = messages_layout[0].width as usize - ("👉 ".len() + 1);
+            elem.wrapped(width).into()
+        })
         .collect::<Vec<ListItem>>();
     let messages = List::new(items)
         .block(

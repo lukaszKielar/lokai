@@ -2,12 +2,10 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use tokio::{sync::mpsc, task::JoinHandle};
 
-use crate::{
-    app::AppResult,
-    crud::{create_message, get_messages},
-    event::Event,
-    models::{Message, Role},
-};
+use crate::app::AppResult;
+use crate::crud::{create_message, get_messages};
+use crate::event::Event;
+use crate::models::{Message, Role};
 
 static DEFAULT_LLM_MODEL: &str = "phi3:3.8b";
 static OLLAMA_URL: &str = "http://host.docker.internal:11434";
@@ -98,13 +96,10 @@ async fn inference(
             .await?
             .json::<OllamaChatResponse>()
             .await?;
-        let assistant_response = create_message(
-            sqlite.clone(),
-            Role::Assistant,
-            response.message.content,
-            conversation_id,
-        )
-        .await?;
+        let content = response.message.content.trim().to_string();
+
+        let assistant_response =
+            create_message(sqlite.clone(), Role::Assistant, content, conversation_id).await?;
 
         transaction.commit().await?;
 

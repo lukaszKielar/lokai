@@ -1,7 +1,8 @@
 use chrono::{DateTime, Utc};
-use ratatui::text::Text;
+use ratatui::text::{Line, Text};
 use serde::{Deserialize, Serialize};
 use sqlx::{sqlite::SqliteRow, FromRow, Row};
+use textwrap::Options;
 
 #[derive(Serialize, Deserialize, FromRow, Debug, Clone)]
 pub struct Conversation {
@@ -37,6 +38,23 @@ pub struct Message {
     pub content: String,
     pub conversation_id: u32,
     pub created_at: DateTime<Utc>,
+}
+
+impl Message {
+    pub fn wrapped(&self, width: usize) -> Text<'_> {
+        let icon = match self.role {
+            Role::Assistant => "🤖",
+            Role::System => "🧰",
+            Role::User => "👤",
+        };
+        let content = format!("{} {}", icon, self.content.trim());
+        Text::from(
+            textwrap::wrap(&content, Options::new(width))
+                .iter()
+                .map(|elem| Line::from(elem.to_string()))
+                .collect::<Vec<Line>>(),
+        )
+    }
 }
 
 impl<'a> From<&Message> for Text<'a> {
