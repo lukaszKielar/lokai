@@ -25,6 +25,7 @@ sqlx = { version = "=0.8.0", default-features = false, features = [
     "sqlite",
     "tls-native-tls",
 ] }
+textwrap = "0.16"
 tokio = { version = "1", features = [
     "macros",
     "rt",

@@ -1,5 +1,6 @@
 use std::{env, io};
 
+use handler::{handle_inference_event, handle_inference_stream_event};
 use ratatui::{backend::CrosstermBackend, Terminal};
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::Executor;
@@ -23,8 +24,8 @@ pub mod ui;
 #[tokio::main]
 async fn main() -> AppResult<()> {
     let sqlite = SqlitePoolOptions::new()
-        .min_connections(2)
-        .max_connections(10)
+        .min_connections(10)
+        .max_connections(50)
         .after_connect(|conn, _meta| {
             Box::pin(async move {
                 conn.execute("PRAGMA foreign_keys = ON;").await?;
@@ -54,7 +55,8 @@ async fn main() -> AppResult<()> {
             Event::Key(key_event) => handle_key_events(key_event, &mut app).await?,
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
-            Event::Inference(message) => println!("{:?}", message),
+            Event::Inference(message, false) => handle_inference_event(message, &mut app)?,
+            Event::Inference(message, true) => handle_inference_stream_event(message, &mut app)?,
         }
     }
 

@@ -2,7 +2,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::app::{App, AppFocus, AppResult};
 use crate::crud::{create_message, get_messages};
-use crate::models::Role;
+use crate::models::{Message, Role};
 
 /// Some key events are associated with specific focus blocks, other events work globally
 pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
@@ -34,8 +34,8 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
                             conversation.id,
                         )
                         .await?;
-                        app.prompt.inference_tx.send(user_message.clone()).await?;
-                        app.message_list.items.push(user_message);
+                        app.message_list.items.push(user_message.clone());
+                        app.prompt.inference_tx.send(user_message).await?;
                         app.prompt.clear();
                     }
                 }
@@ -91,5 +91,33 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
             }
         }
     }
+    Ok(())
+}
+
+pub fn handle_inference_event(message: Message, app: &mut App) -> AppResult<()> {
+    app.message_list.items.push(message);
+
+    Ok(())
+}
+
+// TODO: simply ignore inference when message.conversation_id doesn't match with actually selected conversation
+pub fn handle_inference_stream_event(message: Message, app: &mut App) -> AppResult<()> {
+    if let Some(last_message) = app.message_list.items.last() {
+        if let Some(conversation) = app.conversation_list.currently_selected() {
+            if conversation.id.eq(&message.conversation_id) {
+                match last_message.role {
+                    Role::Assistant => {
+                        app.message_list.items.pop();
+                        app.message_list.items.push(message);
+                    }
+                    Role::System => {}
+                    Role::User => {
+                        app.message_list.items.push(message);
+                    }
+                }
+            }
+        }
+    };
+
     Ok(())
 }

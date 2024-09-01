@@ -1,9 +1,10 @@
+use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use tokio::{sync::mpsc, task::JoinHandle};
 
 use crate::app::AppResult;
-use crate::crud::{create_message, get_messages};
+use crate::crud::{create_message, get_messages, update_message};
 use crate::event::Event;
 use crate::models::{Message, Role};
 
@@ -22,7 +23,7 @@ impl Ollama {
     ) -> Self {
         let join_handle = tokio::spawn(async move {
             let reqwest_client = reqwest::Client::new();
-            let _ = inference(sqlite, inference_rx, event_tx, reqwest_client).await;
+            let _ = inference_stream(sqlite, inference_rx, event_tx, reqwest_client).await;
         });
         Self {
             _join_handle: join_handle,
@@ -81,9 +82,6 @@ async fn inference(
     reqwest_client: reqwest::Client,
 ) -> AppResult<()> {
     while let Some(inference_message) = inference_rx.recv().await {
-        let sqlite_clone = sqlite.clone();
-        let transaction = sqlite_clone.begin().await?;
-
         let conversation_id = inference_message.conversation_id;
         let messages = get_messages(sqlite.clone(), conversation_id).await?;
 
@@ -96,14 +94,75 @@ async fn inference(
             .await?
             .json::<OllamaChatResponse>()
             .await?;
+
         let content = response.message.content.trim().to_string();
 
         let assistant_response =
             create_message(sqlite.clone(), Role::Assistant, content, conversation_id).await?;
 
-        transaction.commit().await?;
+        let _ = event_tx.send(Event::Inference(assistant_response, false));
+    }
 
-        let _ = event_tx.send(Event::Inference(assistant_response));
+    Ok(())
+}
+
+async fn inference_stream(
+    sqlite: SqlitePool,
+    mut inference_rx: mpsc::Receiver<Message>,
+    event_tx: mpsc::UnboundedSender<Event>,
+    reqwest_client: reqwest::Client,
+) -> AppResult<()> {
+    while let Some(inference_message) = inference_rx.recv().await {
+        let conversation_id = inference_message.conversation_id;
+        let messages = get_messages(sqlite.clone(), conversation_id).await?;
+
+        let params = OllamaChatParams::new(DEFAULT_LLM_MODEL.to_string(), messages, true);
+
+        let mut stream = reqwest_client
+            .post(format!("{}/api/chat", OLLAMA_URL))
+            .json(&params)
+            .send()
+            .await?
+            .bytes_stream()
+            .map(|chunk| chunk.unwrap())
+            .map(|chunk| serde_json::from_slice::<OllamaChatResponseStream>(&chunk));
+
+        let assistant_response = create_message(
+            sqlite.clone(),
+            Role::Assistant,
+            "".to_string(),
+            conversation_id,
+        )
+        .await?;
+
+        let mut is_first_chunk = true;
+        let mut content = String::new();
+
+        while let Some(chunk) = stream.next().await {
+            match chunk {
+                Ok(response) => {
+                    if response.done {
+                        break;
+                    }
+
+                    content.push_str(&response.message.content);
+                    if is_first_chunk {
+                        is_first_chunk = false;
+                        content = content.trim_start().to_string();
+                    };
+
+                    {
+                        let mut assistant_response = assistant_response.clone();
+                        assistant_response.content = content.clone();
+
+                        event_tx.send(Event::Inference(assistant_response, true))?;
+                    }
+                }
+                Err(_) => return Err(format!("Error while reading chunk [{:?}]", chunk).into()),
+            }
+        }
+
+        update_message(sqlite.clone(), content, assistant_response.id).await?;
     }
 
     Ok(())

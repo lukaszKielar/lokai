@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use sqlx::SqlitePool;
 
 use crate::app::AppResult;
@@ -18,11 +20,12 @@ pub async fn get_conversations(sqlite: SqlitePool) -> AppResult<Vec<Conversation
 }
 
 pub async fn get_messages(sqlite: SqlitePool, conversation_id: u32) -> AppResult<Vec<Message>> {
+    tokio::time::sleep(Duration::from_millis(10)).await;
     let items = sqlx::query_as(
         r#"
             SELECT *
             FROM messages
-            WHERE conversation_id = ?
+            WHERE conversation_id = ?1
             ORDER BY created_at ASC
             "#,
     )

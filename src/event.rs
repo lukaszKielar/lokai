@@ -18,7 +18,7 @@ pub enum Event {
     Mouse(MouseEvent),
     /// Terminal resize
     Resize(u16, u16),
-    Inference(Message),
+    Inference(Message, bool),
 }
 
 #[allow(dead_code)]
