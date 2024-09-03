@@ -74,7 +74,7 @@ impl OllamaChatParams {
     }
 }
 
-// TODO: create streaming version of inference
+#[allow(dead_code)]
 async fn inference(
     sqlite: SqlitePool,
     mut inference_rx: mpsc::Receiver<Message>,

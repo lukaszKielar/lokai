@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use ratatui::text::{Line, Text};
+use ratatui::text::Text;
 use serde::{Deserialize, Serialize};
 use sqlx::{sqlite::SqliteRow, FromRow, Row};
 use textwrap::Options;
@@ -48,12 +48,7 @@ impl Message {
             Role::User => "👤",
         };
         let content = format!("{} {}", icon, self.content.trim());
-        Text::from(
-            textwrap::wrap(&content, Options::new(width))
-                .iter()
-                .map(|elem| Line::from(elem.to_string()))
-                .collect::<Vec<Line>>(),
-        )
+        Text::from(textwrap::wrap(&content, Options::new(width)).join("\n"))
     }
 }
 

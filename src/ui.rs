@@ -1,6 +1,6 @@
 use ratatui::layout::{Alignment, Constraint, Direction, Layout};
 use ratatui::style::{Style, Stylize};
-use ratatui::widgets::{Block, BorderType, List, ListDirection, ListItem};
+use ratatui::widgets::{Block, BorderType, List, ListDirection, ListItem, Padding};
 use ratatui::Frame;
 
 const FOCUS_BORDER_TYPE: BorderType = BorderType::Double;
@@ -31,11 +31,12 @@ pub fn render(app: &mut App, frame: &mut Frame) {
                 .border_type(match app.current_focus() {
                     AppFocus::Conversation => FOCUS_BORDER_TYPE,
                     _ => NORMAL_BORDER_TYPE,
-                }),
+                })
+                .padding(Padding::new(1, 1, 0, 0)),
         )
         .highlight_style(Style::default().bold())
         .highlight_symbol("👉 ")
-        .repeat_highlight_symbol(true)
+        .repeat_highlight_symbol(false)
         .direction(ListDirection::TopToBottom);
     frame.render_stateful_widget(conversations, chunks[0], &mut app.conversation_list.state);
 
@@ -48,15 +49,17 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             Constraint::Max(10),
         ])
         .split(chunks[1]);
+    let message_padding = Padding::new(1, 1, 0, 0);
     let items = app
         .message_list
         .items
         .iter()
         .map(|elem| {
-            let width = messages_layout[0].width as usize - ("👉 ".len() + 1);
-            elem.wrapped(width).into()
+            let width =
+                messages_layout[0].width - (message_padding.left + message_padding.right) * 2;
+            elem.wrapped(width as usize)
         })
-        .collect::<Vec<ListItem>>();
+        .collect::<Vec<_>>();
     let messages = List::new(items)
         .block(
             Block::bordered()
@@ -65,11 +68,10 @@ pub fn render(app: &mut App, frame: &mut Frame) {
                 .border_type(match app.current_focus() {
                     AppFocus::Messages => FOCUS_BORDER_TYPE,
                     _ => NORMAL_BORDER_TYPE,
-                }),
+                })
+                .padding(message_padding),
         )
         .highlight_style(Style::default().bold())
-        .highlight_symbol("👉 ")
-        .repeat_highlight_symbol(true)
         .direction(ListDirection::TopToBottom);
     frame.render_stateful_widget(messages, messages_layout[0], &mut app.message_list.state);
 
