@@ -44,28 +44,30 @@ impl AppFocus {
     }
 }
 
+// TODO: create shared AppState(SqlitePool)
+
 // TODO: make all attrs private
 pub struct App {
-    pub sqlite: SqlitePool,
-    running: bool,
-    pub conversations: Conversations,
     pub chat: Chat,
-    focus: AppFocus,
+    pub conversations: Conversations,
     pub prompt: Prompt<'static>,
-    pub ollama: Ollama,
+    focus: AppFocus,
+    running: bool,
+    sqlite: SqlitePool,
+    _ollama: Ollama,
 }
 
 impl App {
     pub fn new(sqlite: SqlitePool, event_tx: UnboundedSender<Event>) -> Self {
         let (inference_tx, inference_rx) = mpsc::channel::<Message>(10);
         Self {
-            sqlite: sqlite.clone(),
-            running: true,
-            conversations: Default::default(),
             chat: Default::default(),
-            focus: Default::default(),
+            conversations: Default::default(),
             prompt: Prompt::new(inference_tx),
-            ollama: Ollama::new(sqlite, inference_rx, event_tx),
+            focus: Default::default(),
+            running: true,
+            sqlite: sqlite.clone(),
+            _ollama: Ollama::new(sqlite, inference_rx, event_tx),
         }
     }
 

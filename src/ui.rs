@@ -10,6 +10,7 @@ use crate::app::{App, AppFocus};
 const FOCUS_BORDER_TYPE: BorderType = BorderType::Double;
 const NORMAL_BORDER_TYPE: BorderType = BorderType::Rounded;
 
+// TODO: make it simpler
 pub fn render(app: &mut App, frame: &mut Frame) {
     let area = frame.area();
 
