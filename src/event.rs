@@ -10,13 +10,17 @@ use tokio::{
 
 use crate::{models::Message, AppResult};
 
-// TODO: remove events I won't use
-// TODO: add new events
+#[derive(Clone, Debug)]
+pub enum InferenceType {
+    Streaming,
+    NonStreaming,
+}
+
 #[derive(Clone, Debug)]
 pub enum Event {
     TerminalTick,
     Key(KeyEvent),
-    Inference(Message, bool),
+    Inference(Message, InferenceType),
 }
 
 #[allow(dead_code)]
@@ -43,12 +47,13 @@ impl EventHandler {
                         break;
                     }
                     _ = tick_delay => {
-                        event_tx.send(Event::TerminalTick).unwrap();
+                        // ignore any tick errors, ideally log that
+                        event_tx.send(Event::TerminalTick).expect("Cannot send tick event");
                     }
                     Some(Ok(evt)) = crossterm_event => {
                         if let CrosstermEvent::Key(key) = evt {
                             if key.kind == KeyEventKind::Press {
-                                event_tx.send(Event::Key(key)).unwrap();
+                                event_tx.send(Event::Key(key)).expect("Cannot send key event");
                             }
                         }
                     }

@@ -1,23 +1,16 @@
 use std::{env, error::Error, io, result::Result};
 
-use handler::{handle_inference_event, handle_inference_stream_event};
 use ratatui::{backend::CrosstermBackend, Terminal};
 use sqlx::{sqlite::SqlitePoolOptions, Executor};
 use tokio::sync::mpsc;
 
-use crate::{
-    app::App,
-    event::{Event, EventHandler},
-    handler::handle_key_events,
-    tui::Tui,
-};
+use crate::{app::App, event::EventHandler, tui::Tui};
 
 pub mod app;
 pub mod chat;
 pub mod conversations;
 pub mod db;
 pub mod event;
-pub mod handler;
 pub mod models;
 pub mod ollama;
 pub mod prompt;
@@ -52,15 +45,11 @@ async fn main() -> AppResult<()> {
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
 
-    while app.running {
+    while app.is_running() {
         tui.draw(&mut app)?;
 
-        match tui.events.next().await? {
-            Event::TerminalTick => {}
-            Event::Key(key_event) => handle_key_events(key_event, &mut app).await?,
-            Event::Inference(message, false) => handle_inference_event(message, &mut app)?,
-            Event::Inference(message, true) => handle_inference_stream_event(message, &mut app)?,
-        }
+        let event = tui.events.next().await?;
+        app.handle_events(event).await?;
     }
 
     tui.exit()?;

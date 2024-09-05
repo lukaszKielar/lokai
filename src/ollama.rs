@@ -8,7 +8,7 @@ use tokio::{
 
 use crate::{
     db::{create_message, get_messages, update_message},
-    event::Event,
+    event::{Event, InferenceType},
     models::{Message, Role},
     AppResult,
 };
@@ -105,7 +105,10 @@ async fn inference(
         let assistant_response =
             create_message(sqlite.clone(), Role::Assistant, content, conversation_id).await?;
 
-        let _ = event_tx.send(Event::Inference(assistant_response, false));
+        let _ = event_tx.send(Event::Inference(
+            assistant_response,
+            InferenceType::NonStreaming,
+        ));
     }
 
     Ok(())
@@ -160,7 +163,10 @@ async fn inference_stream(
                         let mut assistant_response = assistant_response.clone();
                         assistant_response.content = content.clone();
 
-                        event_tx.send(Event::Inference(assistant_response, true))?;
+                        event_tx.send(Event::Inference(
+                            assistant_response,
+                            InferenceType::Streaming,
+                        ))?;
                     }
                 }
                 Err(_) => return Err(format!("Error while reading chunk [{:?}]", chunk).into()),

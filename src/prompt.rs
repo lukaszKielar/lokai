@@ -3,6 +3,7 @@ use tui_textarea::TextArea;
 
 use crate::models::Message;
 
+// TODO: make all attrs private
 #[derive(Debug, Clone)]
 pub struct Prompt<'a> {
     pub text_area: TextArea<'a>,

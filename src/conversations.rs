@@ -2,7 +2,7 @@ use ratatui::widgets::ListState;
 
 use crate::models::Conversation;
 
-// TODO: remove pub from attrs
+// TODO: make all attrs private
 // TODO: create common StatefulList trait and implement it for Conversations and MessageList
 #[derive(Default)]
 pub struct Conversations {
