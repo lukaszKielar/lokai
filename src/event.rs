@@ -2,8 +2,11 @@ use std::time::Duration;
 
 use crossterm::event::{Event as CrosstermEvent, EventStream, KeyEvent, KeyEventKind};
 use futures::{FutureExt, StreamExt};
-use tokio::sync::mpsc;
-use tokio::time::interval;
+use tokio::{
+    sync::mpsc::{self, UnboundedReceiver},
+    task::JoinHandle,
+    time::interval,
+};
 
 use crate::{app::AppResult, models::Message};
 
@@ -19,15 +22,15 @@ pub enum Event {
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct EventHandler {
-    event_rx: mpsc::UnboundedReceiver<Event>,
-    join_handle: tokio::task::JoinHandle<()>,
+    event_rx: UnboundedReceiver<Event>,
+    join_handle: JoinHandle<()>,
 }
 
 impl EventHandler {
     pub fn new(
         tick_rate: u64,
         event_tx: mpsc::UnboundedSender<Event>,
-        event_rx: mpsc::UnboundedReceiver<Event>,
+        event_rx: UnboundedReceiver<Event>,
     ) -> Self {
         let join_handle = tokio::spawn(async move {
             let mut reader = EventStream::new();

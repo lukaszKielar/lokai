@@ -2,14 +2,15 @@ use std::{env, io};
 
 use handler::{handle_inference_event, handle_inference_stream_event};
 use ratatui::{backend::CrosstermBackend, Terminal};
-use sqlx::sqlite::SqlitePoolOptions;
-use sqlx::Executor;
+use sqlx::{sqlite::SqlitePoolOptions, Executor};
 use tokio::sync::mpsc;
 
-use crate::app::{App, AppResult};
-use crate::event::{Event, EventHandler};
-use crate::handler::handle_key_events;
-use crate::tui::Tui;
+use crate::{
+    app::{App, AppResult},
+    event::{Event, EventHandler},
+    handler::handle_key_events,
+    tui::Tui,
+};
 
 pub mod app;
 pub mod db;

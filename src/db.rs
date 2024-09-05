@@ -2,8 +2,10 @@ use std::time::Duration;
 
 use sqlx::SqlitePool;
 
-use crate::app::AppResult;
-use crate::models::{Conversation, Message, Role};
+use crate::{
+    app::AppResult,
+    models::{Conversation, Message, Role},
+};
 
 pub async fn get_conversations(sqlite: SqlitePool) -> AppResult<Vec<Conversation>> {
     let items = sqlx::query_as(

@@ -1,12 +1,14 @@
-use ratatui::layout::{Alignment, Constraint, Direction, Layout};
-use ratatui::style::{Style, Stylize};
-use ratatui::widgets::{Block, BorderType, List, ListDirection, ListItem, Padding};
-use ratatui::Frame;
+use ratatui::{
+    layout::{Alignment, Constraint, Direction, Layout},
+    style::{Style, Stylize},
+    widgets::{Block, BorderType, List, ListDirection, ListItem, Padding},
+    Frame,
+};
+
+use crate::app::{App, AppFocus};
 
 const FOCUS_BORDER_TYPE: BorderType = BorderType::Double;
 const NORMAL_BORDER_TYPE: BorderType = BorderType::Rounded;
-
-use crate::app::{App, AppFocus};
 
 pub fn render(app: &mut App, frame: &mut Frame) {
     let area = frame.area();

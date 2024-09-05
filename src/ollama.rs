@@ -3,10 +3,12 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use tokio::{sync::mpsc, task::JoinHandle};
 
-use crate::app::AppResult;
-use crate::db::{create_message, get_messages, update_message};
-use crate::event::Event;
-use crate::models::{Message, Role};
+use crate::{
+    app::AppResult,
+    db::{create_message, get_messages, update_message},
+    event::Event,
+    models::{Message, Role},
+};
 
 static DEFAULT_LLM_MODEL: &str = "phi3:3.8b";
 static OLLAMA_URL: &str = "http://host.docker.internal:11434";

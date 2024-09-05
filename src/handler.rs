@@ -1,8 +1,10 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::app::{App, AppFocus, AppResult};
-use crate::db::{create_message, get_messages};
-use crate::models::{Message, Role};
+use crate::{
+    app::{App, AppFocus, AppResult},
+    db::{create_message, get_messages},
+    models::{Message, Role},
+};
 
 /// Some key events are associated with specific focus blocks, other events work globally
 pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {

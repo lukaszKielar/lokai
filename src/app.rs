@@ -4,11 +4,13 @@ use ratatui::widgets::ListState;
 use sqlx::SqlitePool;
 use tokio::sync::mpsc;
 
-use crate::db::get_conversations;
-use crate::event::Event;
-use crate::models::{Conversation, Message};
-use crate::ollama::Ollama;
-use crate::prompt::Prompt;
+use crate::{
+    db::get_conversations,
+    event::Event,
+    models::{Conversation, Message},
+    ollama::Ollama,
+    prompt::Prompt,
+};
 
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
