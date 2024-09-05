@@ -51,10 +51,8 @@ async fn main() -> AppResult<()> {
         tui.draw(&mut app)?;
 
         match tui.events.next().await? {
-            Event::Tick => {}
+            Event::TerminalTick => {}
             Event::Key(key_event) => handle_key_events(key_event, &mut app).await?,
-            Event::Mouse(_) => {}
-            Event::Resize(_, _) => {}
             Event::Inference(message, false) => handle_inference_event(message, &mut app)?,
             Event::Inference(message, true) => handle_inference_stream_event(message, &mut app)?,
         }
