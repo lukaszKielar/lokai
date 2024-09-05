@@ -1,4 +1,4 @@
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::Sender;
 use tui_textarea::TextArea;
 
 use crate::models::Message;
@@ -6,11 +6,11 @@ use crate::models::Message;
 #[derive(Debug, Clone)]
 pub struct Prompt<'a> {
     pub text_area: TextArea<'a>,
-    pub inference_tx: mpsc::Sender<Message>,
+    pub inference_tx: Sender<Message>,
 }
 
 impl<'a> Prompt<'a> {
-    pub fn new(inference_tx: mpsc::Sender<Message>) -> Self {
+    pub fn new(inference_tx: Sender<Message>) -> Self {
         Self {
             text_area: Default::default(),
             inference_tx,

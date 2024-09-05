@@ -20,8 +20,8 @@ pub fn render(app: &mut App, frame: &mut Frame) {
 
     // conversations widget
     let items = app
-        .conversation_list
-        .items
+        .conversations
+        .conversations
         .iter()
         .map(|elem| elem.name.to_owned().into())
         .collect::<Vec<ListItem>>();
@@ -40,7 +40,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .highlight_symbol("👉 ")
         .repeat_highlight_symbol(false)
         .direction(ListDirection::TopToBottom);
-    frame.render_stateful_widget(conversations, chunks[0], &mut app.conversation_list.state);
+    frame.render_stateful_widget(conversations, chunks[0], &mut app.conversations.state);
 
     // messages widget
     let messages_layout = Layout::default()
@@ -53,8 +53,8 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .split(chunks[1]);
     let message_padding = Padding::new(1, 1, 0, 0);
     let items = app
-        .message_list
-        .items
+        .chat
+        .messages
         .iter()
         .map(|elem| {
             let width =
@@ -75,7 +75,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         )
         .highlight_style(Style::default().bold())
         .direction(ListDirection::TopToBottom);
-    frame.render_stateful_widget(messages, messages_layout[0], &mut app.message_list.state);
+    frame.render_stateful_widget(messages, messages_layout[0], &mut app.chat.state);
 
     // TODO: I need to put text to new line when it reaches width of the block
     app.prompt.text_area.set_block(

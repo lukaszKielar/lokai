@@ -3,8 +3,8 @@ use std::time::Duration;
 use sqlx::SqlitePool;
 
 use crate::{
-    app::AppResult,
     models::{Conversation, Message, Role},
+    AppResult,
 };
 
 pub async fn get_conversations(sqlite: SqlitePool) -> AppResult<Vec<Conversation>> {

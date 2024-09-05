@@ -1,4 +1,4 @@
-use std::{env, io};
+use std::{env, error::Error, io, result::Result};
 
 use handler::{handle_inference_event, handle_inference_stream_event};
 use ratatui::{backend::CrosstermBackend, Terminal};
@@ -6,13 +6,15 @@ use sqlx::{sqlite::SqlitePoolOptions, Executor};
 use tokio::sync::mpsc;
 
 use crate::{
-    app::{App, AppResult},
+    app::App,
     event::{Event, EventHandler},
     handler::handle_key_events,
     tui::Tui,
 };
 
 pub mod app;
+pub mod chat;
+pub mod conversations;
 pub mod db;
 pub mod event;
 pub mod handler;
@@ -21,6 +23,8 @@ pub mod ollama;
 pub mod prompt;
 pub mod tui;
 pub mod ui;
+
+pub type AppResult<T> = Result<T, Box<dyn Error>>;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {

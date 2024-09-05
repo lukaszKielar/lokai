@@ -1,13 +1,16 @@
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
-use tokio::{sync::mpsc, task::JoinHandle};
+use tokio::{
+    sync::mpsc::{Receiver, UnboundedSender},
+    task::JoinHandle,
+};
 
 use crate::{
-    app::AppResult,
     db::{create_message, get_messages, update_message},
     event::Event,
     models::{Message, Role},
+    AppResult,
 };
 
 static DEFAULT_LLM_MODEL: &str = "phi3:3.8b";
@@ -20,8 +23,8 @@ pub struct Ollama {
 impl Ollama {
     pub fn new(
         sqlite: SqlitePool,
-        inference_rx: mpsc::Receiver<Message>,
-        event_tx: mpsc::UnboundedSender<Event>,
+        inference_rx: Receiver<Message>,
+        event_tx: UnboundedSender<Event>,
     ) -> Self {
         let join_handle = tokio::spawn(async move {
             let reqwest_client = reqwest::Client::new();
@@ -79,8 +82,8 @@ impl OllamaChatParams {
 #[allow(dead_code)]
 async fn inference(
     sqlite: SqlitePool,
-    mut inference_rx: mpsc::Receiver<Message>,
-    event_tx: mpsc::UnboundedSender<Event>,
+    mut inference_rx: Receiver<Message>,
+    event_tx: UnboundedSender<Event>,
     reqwest_client: reqwest::Client,
 ) -> AppResult<()> {
     while let Some(inference_message) = inference_rx.recv().await {
@@ -110,8 +113,8 @@ async fn inference(
 
 async fn inference_stream(
     sqlite: SqlitePool,
-    mut inference_rx: mpsc::Receiver<Message>,
-    event_tx: mpsc::UnboundedSender<Event>,
+    mut inference_rx: Receiver<Message>,
+    event_tx: UnboundedSender<Event>,
     reqwest_client: reqwest::Client,
 ) -> AppResult<()> {
     while let Some(inference_message) = inference_rx.recv().await {

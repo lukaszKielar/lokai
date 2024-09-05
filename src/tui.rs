@@ -6,11 +6,7 @@ use crossterm::{
 };
 use ratatui::{backend::Backend, Terminal};
 
-use crate::{
-    app::{App, AppResult},
-    event::EventHandler,
-    ui,
-};
+use crate::{app::App, event::EventHandler, ui, AppResult};
 
 #[derive(Debug)]
 pub struct Tui<B: Backend> {

@@ -3,12 +3,12 @@ use std::time::Duration;
 use crossterm::event::{Event as CrosstermEvent, EventStream, KeyEvent, KeyEventKind};
 use futures::{FutureExt, StreamExt};
 use tokio::{
-    sync::mpsc::{self, UnboundedReceiver},
+    sync::mpsc::{UnboundedReceiver, UnboundedSender},
     task::JoinHandle,
     time::interval,
 };
 
-use crate::{app::AppResult, models::Message};
+use crate::{models::Message, AppResult};
 
 // TODO: remove events I won't use
 // TODO: add new events
@@ -29,7 +29,7 @@ pub struct EventHandler {
 impl EventHandler {
     pub fn new(
         tick_rate: u64,
-        event_tx: mpsc::UnboundedSender<Event>,
+        event_tx: UnboundedSender<Event>,
         event_rx: UnboundedReceiver<Event>,
     ) -> Self {
         let join_handle = tokio::spawn(async move {

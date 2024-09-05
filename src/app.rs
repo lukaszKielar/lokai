@@ -1,41 +1,10 @@
-use std::error;
-
-use ratatui::widgets::ListState;
 use sqlx::SqlitePool;
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::{self, UnboundedSender};
 
 use crate::{
-    db::get_conversations,
-    event::Event,
-    models::{Conversation, Message},
-    ollama::Ollama,
-    prompt::Prompt,
+    chat::Chat, conversations::Conversations, db::get_conversations, event::Event, models::Message,
+    ollama::Ollama, prompt::Prompt, AppResult,
 };
-
-pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
-
-// TODO: remove pub from attrs
-// TODO: create common StatefulList trait and implement it for ConversationList and MessageList
-#[derive(Default)]
-pub struct ConversationList {
-    pub items: Vec<Conversation>,
-    pub state: ListState,
-}
-
-impl ConversationList {
-    pub fn currently_selected(&self) -> Option<Conversation> {
-        let selected_index = self.state.selected()?;
-        self.items.get(selected_index).cloned()
-    }
-}
-
-// TODO: remove pub from attrs
-// TODO: create common StatefulList trait and implement it for ConversationList and MessageList
-#[derive(Default)]
-pub struct MessageList {
-    pub items: Vec<Message>,
-    pub state: ListState,
-}
 
 #[derive(Copy, Clone)]
 pub enum AppFocus {
@@ -68,24 +37,25 @@ impl AppFocus {
     }
 }
 
+// TODO: remove all pub attributes
 pub struct App {
     pub sqlite: SqlitePool,
     pub running: bool,
-    pub conversation_list: ConversationList,
-    pub message_list: MessageList,
+    pub conversations: Conversations,
+    pub chat: Chat,
     focus: AppFocus,
     pub prompt: Prompt<'static>,
     pub ollama: Ollama,
 }
 
 impl App {
-    pub fn new(sqlite: SqlitePool, event_tx: mpsc::UnboundedSender<Event>) -> Self {
+    pub fn new(sqlite: SqlitePool, event_tx: UnboundedSender<Event>) -> Self {
         let (inference_tx, inference_rx) = mpsc::channel::<Message>(10);
         Self {
             sqlite: sqlite.clone(),
             running: true,
-            conversation_list: Default::default(),
-            message_list: Default::default(),
+            conversations: Default::default(),
+            chat: Default::default(),
             focus: Default::default(),
             prompt: Prompt::new(inference_tx),
             ollama: Ollama::new(sqlite, inference_rx, event_tx),
@@ -94,7 +64,7 @@ impl App {
 
     pub async fn init(&mut self) -> AppResult<()> {
         let conversations = get_conversations(self.sqlite.clone()).await?;
-        self.conversation_list.items = conversations;
+        self.conversations.conversations = conversations;
 
         Ok(())
     }
