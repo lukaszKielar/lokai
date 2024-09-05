@@ -12,7 +12,7 @@ use crate::handler::handle_key_events;
 use crate::tui::Tui;
 
 pub mod app;
-pub mod crud;
+pub mod db;
 pub mod event;
 pub mod handler;
 pub mod models;

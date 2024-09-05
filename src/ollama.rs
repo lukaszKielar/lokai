@@ -4,7 +4,7 @@ use sqlx::SqlitePool;
 use tokio::{sync::mpsc, task::JoinHandle};
 
 use crate::app::AppResult;
-use crate::crud::{create_message, get_messages, update_message};
+use crate::db::{create_message, get_messages, update_message};
 use crate::event::Event;
 use crate::models::{Message, Role};
 

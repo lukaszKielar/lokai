@@ -4,7 +4,7 @@ use ratatui::widgets::ListState;
 use sqlx::SqlitePool;
 use tokio::sync::mpsc;
 
-use crate::crud::get_conversations;
+use crate::db::get_conversations;
 use crate::event::Event;
 use crate::models::{Conversation, Message};
 use crate::ollama::Ollama;

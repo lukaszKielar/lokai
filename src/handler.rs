@@ -1,7 +1,7 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::app::{App, AppFocus, AppResult};
-use crate::crud::{create_message, get_messages};
+use crate::db::{create_message, get_messages};
 use crate::models::{Message, Role};
 
 /// Some key events are associated with specific focus blocks, other events work globally
