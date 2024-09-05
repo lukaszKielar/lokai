@@ -39,16 +39,17 @@ async fn main() -> AppResult<()> {
     let mut app: App = App::new(sqlite, event_tx.clone());
     app.init().await?;
 
+    let mut event_handler = EventHandler::new(250, event_tx, event_rx);
+
     let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend)?;
-    let events = EventHandler::new(250, event_tx, event_rx);
-    let mut tui = Tui::new(terminal, events);
+    let mut tui = Tui::new(terminal);
     tui.init()?;
 
     while app.is_running() {
         tui.draw(&mut app)?;
 
-        let event = tui.events.next().await?;
+        let event = event_handler.next().await?;
         app.handle_events(event).await?;
     }
 
