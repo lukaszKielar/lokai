@@ -15,6 +15,7 @@
             "extensions": [
                 "esbenp.prettier-vscode",
                 "fill-labs.dependi",
+                "Gruntfuggly.todo-tree",
                 "ms-azuretools.vscode-docker",
                 "oderwat.indent-rainbow"
             ]

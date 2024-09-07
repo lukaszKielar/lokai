@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use sqlx::SqlitePool;
-use tokio::sync::mpsc::{self, UnboundedSender};
+use tokio::sync::mpsc::{self, Sender, UnboundedSender};
 
 use crate::{
     chat::Chat,
@@ -46,12 +46,12 @@ impl AppFocus {
 
 // TODO: create shared AppState(SqlitePool)
 
-// TODO: make all attrs private
 pub struct App {
     pub chat: Chat,
     pub conversations: Conversations,
-    pub prompt: Prompt<'static>,
+    pub prompt: Prompt,
     focus: AppFocus,
+    inference_tx: Sender<Message>,
     running: bool,
     sqlite: SqlitePool,
     _ollama: Ollama,
@@ -61,10 +61,11 @@ impl App {
     pub fn new(sqlite: SqlitePool, event_tx: UnboundedSender<Event>) -> Self {
         let (inference_tx, inference_rx) = mpsc::channel::<Message>(10);
         Self {
-            chat: Default::default(),
-            conversations: Default::default(),
-            prompt: Prompt::new(inference_tx),
+            chat: Chat::new(sqlite.clone()),
+            conversations: Conversations::new(sqlite.clone()),
+            prompt: Default::default(),
             focus: Default::default(),
+            inference_tx,
             running: true,
             sqlite: sqlite.clone(),
             _ollama: Ollama::new(sqlite, inference_rx, event_tx),
@@ -73,7 +74,7 @@ impl App {
 
     pub async fn init(&mut self) -> AppResult<()> {
         let conversations = db::get_conversations(self.sqlite.clone()).await?;
-        self.conversations.conversations = conversations;
+        self.conversations.set_conversations(conversations);
 
         Ok(())
     }
@@ -101,7 +102,7 @@ impl App {
                 if key_event.modifiers == KeyModifiers::CONTROL {
                     self.running = false;
                 } else {
-                    self.prompt.text_area.input(key_event);
+                    self.prompt.handle_input(key_event);
                 }
             }
             KeyCode::Enter => {
@@ -110,22 +111,20 @@ impl App {
                 // https://github.com/crossterm-rs/crossterm/issues/685
                 if let AppFocus::Prompt = self.current_focus() {
                     if key_event.modifiers == KeyModifiers::SHIFT {
-                        self.prompt.text_area.insert_str("\n");
+                        self.prompt.new_line();
                     } else {
                         // we're able to send only when we have selected conversation
                         if let Some(conversation) = self.conversations.currently_selected() {
-                            // TODO: 1. get text, 2. send text to inference thread, 3. clear input
-                            let user_input =
-                                self.prompt.text_area.lines().join("\n").trim().to_string();
+                            let user_prompt = self.prompt.get_content();
                             let user_message = db::create_message(
                                 self.sqlite.clone(),
                                 Role::User,
-                                user_input,
+                                user_prompt,
                                 conversation.id,
                             )
                             .await?;
-                            self.chat.messages.push(user_message.clone());
-                            self.prompt.inference_tx.send(user_message).await?;
+                            self.chat.push(user_message.clone());
+                            self.inference_tx.send(user_message).await?;
                             self.prompt.clear();
                         }
                     }
@@ -136,48 +135,41 @@ impl App {
                     // 1. get index of conversation
                     // 2. get messages for conversation
                     // 3. mutate state of app by assigning messages to proper attr
-                    self.conversations.state.scroll_down_by(1);
-                    if let Some(current_index) = self.conversations.state.selected() {
-                        self.chat.state.select(None);
-                        if let Some(item) = self.conversations.conversations.get(current_index) {
-                            let messages = db::get_messages(self.sqlite.clone(), item.id).await?;
-                            self.chat.messages = messages;
-                        }
-                    };
+                    self.conversations.down();
+                    if let Some(conversation) = self.conversations.currently_selected() {
+                        self.chat.load_messages(conversation.id).await?;
+                    }
                 }
-                AppFocus::Messages => self.chat.state.scroll_down_by(1),
+                AppFocus::Messages => self.chat.down(),
                 AppFocus::Prompt => {
-                    self.prompt.text_area.input(key_event);
+                    self.prompt.handle_input(key_event);
                 }
             },
             KeyCode::Up => match self.current_focus() {
                 AppFocus::Conversation => {
-                    self.conversations.state.scroll_up_by(1);
-                    if let Some(current_index) = self.conversations.state.selected() {
-                        if let Some(item) = self.conversations.conversations.get(current_index) {
-                            let messages = db::get_messages(self.sqlite.clone(), item.id).await?;
-                            self.chat.messages = messages;
-                        }
-                    };
+                    self.conversations.up();
+                    if let Some(conversation) = self.conversations.currently_selected() {
+                        self.chat.load_messages(conversation.id).await?;
+                    }
                 }
-                AppFocus::Messages => self.chat.state.scroll_up_by(1),
+                AppFocus::Messages => self.chat.up(),
                 AppFocus::Prompt => {
-                    self.prompt.text_area.input(key_event);
+                    self.prompt.handle_input(key_event);
                 }
             },
             KeyCode::Esc => match self.current_focus() {
                 AppFocus::Conversation => {
-                    self.conversations.state.select(None);
-                    self.chat.messages = vec![];
+                    self.conversations.unselect();
+                    self.chat.reset();
                 }
-                AppFocus::Messages => self.chat.state.select(None),
-                AppFocus::Prompt => {}
+                AppFocus::Messages => self.chat.unselect(),
+                _ => {}
             },
             KeyCode::Tab => self.next_focus(),
             KeyCode::BackTab => self.previous_focus(),
             _ => {
                 if let AppFocus::Prompt = self.current_focus() {
-                    self.prompt.text_area.input(key_event);
+                    self.prompt.handle_input(key_event);
                 }
             }
         }
@@ -185,23 +177,23 @@ impl App {
     }
 
     async fn handle_inference_event(&mut self, message: Message) -> AppResult<()> {
-        self.chat.messages.push(message);
+        self.chat.push(message);
 
         Ok(())
     }
 
     async fn handle_inference_stream_event(&mut self, message: Message) -> AppResult<()> {
-        if let Some(last_message) = self.chat.messages.last() {
+        if let Some(last_message) = self.chat.last() {
             if let Some(conversation) = self.conversations.currently_selected() {
                 if conversation.id.eq(&message.conversation_id) {
                     match last_message.role {
                         Role::Assistant => {
-                            self.chat.messages.pop();
-                            self.chat.messages.push(message);
+                            self.chat.pop();
+                            self.chat.push(message);
                         }
                         Role::System => {}
                         Role::User => {
-                            self.chat.messages.push(message);
+                            self.chat.push(message);
                         }
                     }
                 }
