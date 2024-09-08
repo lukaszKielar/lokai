@@ -157,14 +157,12 @@ impl App {
                     self.prompt.handle_input(key_event);
                 }
             },
-            KeyCode::Esc => match self.current_focus() {
-                AppFocus::Conversation => {
+            KeyCode::Esc => {
+                if let AppFocus::Conversation = self.current_focus() {
                     self.conversations.unselect();
                     self.chat.reset();
                 }
-                AppFocus::Messages => self.chat.unselect(),
-                _ => {}
-            },
+            }
             KeyCode::Tab => self.next_focus(),
             KeyCode::BackTab => self.previous_focus(),
             _ => {

@@ -1,7 +1,7 @@
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Style, Stylize},
-    widgets::{Block, BorderType, ListDirection, Padding},
+    widgets::{Block, BorderType, ListDirection, Padding, Scrollbar, ScrollbarOrientation},
     Frame,
 };
 use textwrap::Options;
@@ -52,9 +52,10 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         ])
         .split(chunks[1]);
     let message_padding = Padding::new(1, 1, 0, 0);
+
     let messages = app
         .chat
-        .as_list_widget(|message| {
+        .as_paragraph(|message| {
             let width =
                 messages_layout[0].width - (message_padding.left + message_padding.right) * 2;
             let icon = match message.role {
@@ -64,6 +65,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             };
             let content =
                 textwrap::wrap(message.content.trim(), Options::new(width as usize)).join("\n");
+
             format!("{icon} {content}")
         })
         .block(
@@ -76,9 +78,16 @@ pub fn render(app: &mut App, frame: &mut Frame) {
                 })
                 .padding(message_padding),
         )
-        .highlight_style(Style::default().bold())
-        .direction(ListDirection::TopToBottom);
-    frame.render_stateful_widget(messages, messages_layout[0], &mut app.chat.state);
+        .scroll((app.chat.vertical_scroll as u16, 0));
+    frame.render_widget(messages, messages_layout[0]);
+
+    frame.render_stateful_widget(
+        Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓")),
+        messages_layout[0],
+        &mut app.chat.vertical_scrollbar_state,
+    );
 
     // TODO: I need to put text to new line when it reaches width of the block
     app.prompt.set_block(

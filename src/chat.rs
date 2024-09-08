@@ -1,11 +1,12 @@
-use ratatui::widgets::{List, ListItem, ListState};
+use ratatui::widgets::{List, ListItem, Paragraph, ScrollbarState};
 use sqlx::SqlitePool;
 
 use crate::{db, models::Message, AppResult};
 
 pub struct Chat {
     messages: Vec<Message>,
-    pub state: ListState,
+    pub vertical_scrollbar_state: ScrollbarState,
+    pub vertical_scroll: usize,
     sqlite: SqlitePool,
 }
 
@@ -13,23 +14,14 @@ impl Chat {
     pub fn new(sqlite: SqlitePool) -> Self {
         Self {
             messages: vec![],
-            state: Default::default(),
+            vertical_scrollbar_state: Default::default(),
+            vertical_scroll: Default::default(),
             sqlite,
         }
     }
 
-    pub fn currently_selected(&self) -> Option<Message> {
-        let selected_index = self.state.selected()?;
-        self.messages.get(selected_index).cloned()
-    }
-
     pub fn reset(&mut self) {
-        self.unselect();
         self.messages = vec![];
-    }
-
-    pub fn unselect(&mut self) {
-        self.state.select(None);
     }
 
     pub fn push(&mut self, message: Message) {
@@ -45,11 +37,22 @@ impl Chat {
     }
 
     pub fn up(&mut self) {
-        self.state.scroll_up_by(1);
+        self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
+        self.vertical_scrollbar_state =
+            self.vertical_scrollbar_state.position(self.vertical_scroll);
     }
 
     pub fn down(&mut self) {
-        self.state.scroll_down_by(1);
+        self.vertical_scroll = {
+            let next_position = self.vertical_scroll.saturating_add(1);
+            if next_position > self.messages.len() {
+                self.messages.len()
+            } else {
+                next_position
+            }
+        };
+        self.vertical_scrollbar_state =
+            self.vertical_scrollbar_state.position(self.vertical_scroll);
     }
 
     pub async fn load_messages(&mut self, conversation_id: u32) -> AppResult<()> {
@@ -71,5 +74,18 @@ impl Chat {
             .collect::<Vec<ListItem>>();
 
         List::new(items)
+    }
+
+    pub fn as_paragraph<F>(&mut self, f: F) -> Paragraph<'static>
+    where
+        F: Fn(&Message) -> String,
+    {
+        let text = self.messages.iter().map(&f).collect::<Vec<_>>().join("\n");
+
+        self.vertical_scrollbar_state = self
+            .vertical_scrollbar_state
+            .content_length(self.messages.len());
+
+        Paragraph::new(text)
     }
 }
