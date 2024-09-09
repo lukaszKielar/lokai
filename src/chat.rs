@@ -25,29 +25,29 @@ impl Chat {
     pub fn reset(&mut self) {
         self.messages = vec![];
         self.vertical_scroll = 0;
-        self.vertical_scrollbar_state =
-            self.vertical_scrollbar_state.position(self.vertical_scroll);
+        self.vertical_scrollbar_state.first();
     }
 
-    pub fn push(&mut self, message: Message) {
+    pub fn push_message(&mut self, message: Message) {
         self.messages.push(message);
+        self.scroll_down();
     }
 
-    pub fn pop(&mut self) {
+    pub fn pop_message(&mut self) {
         self.messages.pop();
     }
 
-    pub fn last(&self) -> Option<&Message> {
+    pub fn get_last_message(&self) -> Option<&Message> {
         self.messages.last()
     }
 
-    pub fn up(&mut self) {
+    pub fn scroll_up(&mut self) {
         self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
         self.vertical_scrollbar_state =
             self.vertical_scrollbar_state.position(self.vertical_scroll);
     }
 
-    pub fn down(&mut self) {
+    pub fn scroll_down(&mut self) {
         self.vertical_scroll = {
             let next_position = self.vertical_scroll.saturating_add(1);
             if next_position > self.vertical_scrollbar_content_length {
@@ -69,7 +69,8 @@ impl Chat {
         Ok(())
     }
 
-    pub fn as_list_widget<F, T>(&self, f: F) -> List<'static>
+    #[allow(dead_code)]
+    fn as_list_widget<F, T>(&self, f: F) -> List<'static>
     where
         F: Fn(&Message) -> T,
         T: Into<ListItem<'static>>,

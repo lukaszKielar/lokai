@@ -123,7 +123,7 @@ impl App {
                                 conversation.id,
                             )
                             .await?;
-                            self.chat.push(user_message.clone());
+                            self.chat.push_message(user_message.clone());
                             self.inference_tx.send(user_message).await?;
                             self.prompt.clear();
                         }
@@ -140,7 +140,7 @@ impl App {
                         self.chat.load_messages(conversation.id).await?;
                     }
                 }
-                AppFocus::Messages => self.chat.down(),
+                AppFocus::Messages => self.chat.scroll_down(),
                 AppFocus::Prompt => {
                     self.prompt.handle_input(key_event);
                 }
@@ -152,7 +152,7 @@ impl App {
                         self.chat.load_messages(conversation.id).await?;
                     }
                 }
-                AppFocus::Messages => self.chat.up(),
+                AppFocus::Messages => self.chat.scroll_up(),
                 AppFocus::Prompt => {
                     self.prompt.handle_input(key_event);
                 }
@@ -175,23 +175,23 @@ impl App {
     }
 
     async fn handle_inference_event(&mut self, message: Message) -> AppResult<()> {
-        self.chat.push(message);
+        self.chat.push_message(message);
 
         Ok(())
     }
 
     async fn handle_inference_stream_event(&mut self, message: Message) -> AppResult<()> {
-        if let Some(last_message) = self.chat.last() {
+        if let Some(last_message) = self.chat.get_last_message() {
             if let Some(conversation) = self.conversations.currently_selected() {
                 if conversation.id.eq(&message.conversation_id) {
                     match last_message.role {
                         Role::Assistant => {
-                            self.chat.pop();
-                            self.chat.push(message);
+                            self.chat.pop_message();
+                            self.chat.push_message(message);
                         }
                         Role::System => {}
                         Role::User => {
-                            self.chat.push(message);
+                            self.chat.push_message(message);
                         }
                     }
                 }
