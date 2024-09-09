@@ -3,6 +3,7 @@ use sqlx::SqlitePool;
 
 use crate::{db, models::Message, AppResult};
 
+// TODO: automatically scroll to the bottom when messages are loaded
 pub struct Chat {
     messages: Vec<Message>,
     pub vertical_scrollbar_state: ScrollbarState,
@@ -30,7 +31,7 @@ impl Chat {
 
     pub fn push_message(&mut self, message: Message) {
         self.messages.push(message);
-        self.scroll_down();
+        self.scroll_to_bottom();
     }
 
     pub fn pop_message(&mut self) {
@@ -58,6 +59,12 @@ impl Chat {
         };
         self.vertical_scrollbar_state =
             self.vertical_scrollbar_state.position(self.vertical_scroll);
+    }
+
+    pub fn scroll_to_bottom(&mut self) {
+        while self.vertical_scroll != self.vertical_scrollbar_content_length {
+            self.scroll_down();
+        }
     }
 
     pub async fn load_messages(&mut self, conversation_id: u32) -> AppResult<()> {
