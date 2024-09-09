@@ -55,19 +55,22 @@ pub fn render(app: &mut App, frame: &mut Frame) {
 
     let messages = app
         .chat
-        .as_paragraph(|message| {
-            let width =
-                messages_layout[0].width - (message_padding.left + message_padding.right) * 2;
-            let icon = match message.role {
-                Role::Assistant => "🤖",
-                Role::System => "🧰",
-                Role::User => "👤",
-            };
-            let content =
-                textwrap::wrap(message.content.trim(), Options::new(width as usize)).join("\n");
+        .as_paragraph(
+            |message| {
+                let width =
+                    messages_layout[0].width - (message_padding.left + message_padding.right) * 2;
+                let icon = match message.role {
+                    Role::Assistant => "🤖",
+                    Role::System => "🧰",
+                    Role::User => "👤",
+                };
+                let content =
+                    textwrap::wrap(message.content.trim(), Options::new(width as usize)).join("\n");
 
-            format!("{icon} {content}")
-        })
+                format!("{icon} {content}")
+            },
+            messages_layout[0].height as usize,
+        )
         .block(
             Block::bordered()
                 .title("CHAT")
