@@ -21,6 +21,7 @@ pub enum Event {
     TerminalTick,
     Key(KeyEvent),
     Inference(Message, InferenceType),
+    ChatBottomScroll,
 }
 
 #[allow(dead_code)]

@@ -51,6 +51,7 @@ pub struct App {
     pub conversations: Conversations,
     pub prompt: Prompt,
     focus: AppFocus,
+    event_tx: UnboundedSender<Event>,
     inference_tx: Sender<Message>,
     running: bool,
     sqlite: SqlitePool,
@@ -65,6 +66,7 @@ impl App {
             conversations: Conversations::new(sqlite.clone()),
             prompt: Default::default(),
             focus: Default::default(),
+            event_tx: event_tx.clone(),
             inference_tx,
             running: true,
             sqlite: sqlite.clone(),
@@ -132,12 +134,14 @@ impl App {
             }
             KeyCode::Down => match self.current_focus() {
                 AppFocus::Conversation => {
-                    // 1. get index of conversation
-                    // 2. get messages for conversation
-                    // 3. mutate state of app by assigning messages to proper attr
                     self.conversations.down();
                     if let Some(conversation) = self.conversations.currently_selected() {
                         self.chat.load_messages(conversation.id).await?;
+                        // I could've call self.chat.scroll_to_bottom, but at the time of reseting chat
+                        // I had lost all information about scrollbar
+                        // I'll get it next time my UI recalculates scrollbar's params and updates self.chat state
+                        // We know that event we send below will happen after that, therefore it's safe to do it
+                        self.event_tx.send(Event::ChatBottomScroll)?;
                     }
                 }
                 AppFocus::Messages => self.chat.scroll_down(),
@@ -150,6 +154,11 @@ impl App {
                     self.conversations.up();
                     if let Some(conversation) = self.conversations.currently_selected() {
                         self.chat.load_messages(conversation.id).await?;
+                        // I could've call self.chat.scroll_to_bottom, but at the time of reseting chat
+                        // I had lost all information about scrollbar
+                        // I'll get it next time my UI recalculates scrollbar's params and updates self.chat state
+                        // We know that event we send below will happen after that, therefore it's safe to do it
+                        self.event_tx.send(Event::ChatBottomScroll)?;
                     }
                 }
                 AppFocus::Messages => self.chat.scroll_up(),
@@ -201,6 +210,12 @@ impl App {
         Ok(())
     }
 
+    async fn handle_chat_bottom_scroll_event(&mut self) -> AppResult<()> {
+        self.chat.scroll_to_bottom();
+
+        Ok(())
+    }
+
     pub async fn handle_events(&mut self, event: Event) -> AppResult<()> {
         match event {
             Event::TerminalTick => Ok(()),
@@ -211,6 +226,7 @@ impl App {
             Event::Inference(message, InferenceType::NonStreaming) => {
                 self.handle_inference_event(message).await
             }
+            Event::ChatBottomScroll => self.handle_chat_bottom_scroll_event().await,
         }
     }
 }

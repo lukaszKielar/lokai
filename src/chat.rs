@@ -26,6 +26,7 @@ impl Chat {
     pub fn reset(&mut self) {
         self.messages = vec![];
         self.vertical_scroll = 0;
+        self.vertical_scrollbar_content_length = 0;
         self.vertical_scrollbar_state.first();
     }
 
