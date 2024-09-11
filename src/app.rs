@@ -75,7 +75,7 @@ impl App {
     }
 
     pub async fn init(&mut self) -> AppResult<()> {
-        let conversations = db::get_conversations(self.sqlite.clone()).await?;
+        let conversations = db::get_conversations(&self.sqlite).await?;
         self.conversations.set_conversations(conversations);
 
         Ok(())
@@ -119,7 +119,7 @@ impl App {
                         if let Some(conversation) = self.conversations.currently_selected() {
                             let user_prompt = self.prompt.get_content();
                             let user_message = db::create_message(
-                                self.sqlite.clone(),
+                                &self.sqlite,
                                 Role::User,
                                 user_prompt,
                                 conversation.id,

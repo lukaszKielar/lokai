@@ -88,7 +88,7 @@ async fn inference(
 ) -> AppResult<()> {
     while let Some(inference_message) = inference_rx.recv().await {
         let conversation_id = inference_message.conversation_id;
-        let messages = get_messages(sqlite.clone(), conversation_id).await?;
+        let messages = get_messages(&sqlite, conversation_id).await?;
 
         let params = OllamaChatParams::new(DEFAULT_LLM_MODEL.to_string(), messages, false);
 
@@ -103,7 +103,7 @@ async fn inference(
         let content = response.message.content.trim().to_string();
 
         let assistant_response =
-            create_message(sqlite.clone(), Role::Assistant, content, conversation_id).await?;
+            create_message(&sqlite, Role::Assistant, content, conversation_id).await?;
 
         let _ = event_tx.send(Event::Inference(
             assistant_response,
@@ -122,7 +122,7 @@ async fn inference_stream(
 ) -> AppResult<()> {
     while let Some(inference_message) = inference_rx.recv().await {
         let conversation_id = inference_message.conversation_id;
-        let messages = get_messages(sqlite.clone(), conversation_id).await?;
+        let messages = get_messages(&sqlite, conversation_id).await?;
 
         let params = OllamaChatParams::new(DEFAULT_LLM_MODEL.to_string(), messages, true);
 
@@ -135,13 +135,9 @@ async fn inference_stream(
             .map(|chunk| chunk.unwrap())
             .map(|chunk| serde_json::from_slice::<OllamaChatResponseStream>(&chunk));
 
-        let assistant_response = create_message(
-            sqlite.clone(),
-            Role::Assistant,
-            "".to_string(),
-            conversation_id,
-        )
-        .await?;
+        let mut tx = sqlite.begin().await?;
+        let assistant_response =
+            create_message(&mut *tx, Role::Assistant, "".to_string(), conversation_id).await?;
 
         let mut is_first_chunk = true;
         let mut content = String::new();
@@ -173,7 +169,8 @@ async fn inference_stream(
             }
         }
 
-        update_message(sqlite.clone(), content, assistant_response.id).await?;
+        update_message(&mut *tx, content, assistant_response.id).await?;
+        tx.commit().await?;
     }
 
     Ok(())

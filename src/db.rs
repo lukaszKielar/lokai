@@ -1,13 +1,16 @@
 use std::time::Duration;
 
-use sqlx::SqlitePool;
+use sqlx::{Executor, Sqlite};
 
 use crate::{
     models::{Conversation, Message, Role},
     AppResult,
 };
 
-pub async fn get_conversations(sqlite: SqlitePool) -> AppResult<Vec<Conversation>> {
+pub async fn get_conversations<'e, E>(executor: E) -> AppResult<Vec<Conversation>>
+where
+    E: Executor<'e, Database = Sqlite>,
+{
     let items = sqlx::query_as(
         r#"
         SELECT *
@@ -15,13 +18,18 @@ pub async fn get_conversations(sqlite: SqlitePool) -> AppResult<Vec<Conversation
         ORDER BY created_at ASC
         "#,
     )
-    .fetch_all(&sqlite)
+    .persistent(false)
+    .fetch_all(executor)
     .await?;
 
     Ok(items)
 }
 
-pub async fn get_messages(sqlite: SqlitePool, conversation_id: u32) -> AppResult<Vec<Message>> {
+pub async fn get_messages<'e, E>(executor: E, conversation_id: u32) -> AppResult<Vec<Message>>
+where
+    E: Executor<'e, Database = Sqlite>,
+{
+    // TODO: for some weird reason query is cached despite setting persistence to false
     tokio::time::sleep(Duration::from_millis(10)).await;
     let items = sqlx::query_as(
         r#"
@@ -32,19 +40,22 @@ pub async fn get_messages(sqlite: SqlitePool, conversation_id: u32) -> AppResult
             "#,
     )
     .bind(conversation_id)
-    .fetch_all(&sqlite)
+    .persistent(false)
+    .fetch_all(executor)
     .await?;
 
     Ok(items)
 }
 
-// TODO: fix transactions
-pub async fn create_message(
-    sqlite: SqlitePool,
+pub async fn create_message<'e, E>(
+    executor: E,
     role: Role,
     content: String,
     conversation_id: u32,
-) -> AppResult<Message> {
+) -> AppResult<Message>
+where
+    E: Executor<'e, Database = Sqlite>,
+{
     let new_message: Message = sqlx::query_as(
         r#"
         INSERT INTO messages(role, content, conversation_id)
@@ -55,18 +66,21 @@ pub async fn create_message(
     .bind(role.to_string())
     .bind(content)
     .bind(conversation_id)
-    .fetch_one(&sqlite)
+    .persistent(false)
+    .fetch_one(executor)
     .await?;
 
     Ok(new_message)
 }
 
-// TODO: fix transactions
-pub async fn update_message(
-    sqlite: SqlitePool,
+pub async fn update_message<'e, E>(
+    executor: E,
     content: String,
     message_id: u32,
-) -> AppResult<Message> {
+) -> AppResult<Message>
+where
+    E: Executor<'e, Database = Sqlite>,
+{
     let updated_message: Message = sqlx::query_as(
         r#"
         UPDATE messages
@@ -77,7 +91,8 @@ pub async fn update_message(
     )
     .bind(content)
     .bind(message_id)
-    .fetch_one(&sqlite)
+    .persistent(false)
+    .fetch_one(executor)
     .await?;
 
     Ok(updated_message)

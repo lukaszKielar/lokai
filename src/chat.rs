@@ -71,7 +71,7 @@ impl Chat {
     pub async fn load_messages(&mut self, conversation_id: u32) -> AppResult<()> {
         self.reset();
 
-        let messages = db::get_messages(self.sqlite.clone(), conversation_id).await?;
+        let messages = db::get_messages(&self.sqlite, conversation_id).await?;
         self.messages = messages;
 
         Ok(())
