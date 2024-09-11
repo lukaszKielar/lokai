@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use sqlx::{Executor, Sqlite};
 
 use crate::{
@@ -29,8 +27,6 @@ pub async fn get_messages<'e, E>(executor: E, conversation_id: u32) -> AppResult
 where
     E: Executor<'e, Database = Sqlite>,
 {
-    // TODO: for some weird reason query is cached despite setting persistence to false
-    tokio::time::sleep(Duration::from_millis(10)).await;
     let items = sqlx::query_as(
         r#"
             SELECT *

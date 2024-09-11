@@ -57,8 +57,9 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .chat
         .as_paragraph(
             |message| {
-                let width =
-                    messages_layout[0].width - (message_padding.left + message_padding.right) * 2;
+                let width = messages_layout[0].width
+                    - 3
+                    - (message_padding.left + message_padding.right) * 2;
                 let icon = match message.role {
                     Role::Assistant => "🤖",
                     Role::System => "🧰",
