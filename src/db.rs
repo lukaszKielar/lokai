@@ -23,17 +23,57 @@ where
     Ok(items)
 }
 
+pub async fn create_conversation<'e, E>(executor: E, name: String) -> AppResult<Conversation>
+where
+    E: Executor<'e, Database = Sqlite>,
+{
+    let conversation = sqlx::query_as(
+        r#"
+        INSERT INTO conversations(name) VALUES (?1)
+        RETURNING *
+        "#,
+    )
+    .bind(name)
+    .persistent(false)
+    .fetch_one(executor)
+    .await?;
+
+    Ok(conversation)
+}
+
+pub async fn delete_conversation<'e, E>(
+    executor: E,
+    conversation_id: u32,
+) -> AppResult<Conversation>
+where
+    E: Executor<'e, Database = Sqlite>,
+{
+    let conversation = sqlx::query_as(
+        r#"
+        DELETE FROM conversations
+        WHERE id = ?1
+        RETURNING *
+        "#,
+    )
+    .bind(conversation_id)
+    .persistent(false)
+    .fetch_one(executor)
+    .await?;
+
+    Ok(conversation)
+}
+
 pub async fn get_messages<'e, E>(executor: E, conversation_id: u32) -> AppResult<Vec<Message>>
 where
     E: Executor<'e, Database = Sqlite>,
 {
     let items = sqlx::query_as(
         r#"
-            SELECT *
-            FROM messages
-            WHERE conversation_id = ?1
-            ORDER BY created_at ASC
-            "#,
+        SELECT *
+        FROM messages
+        WHERE conversation_id = ?1
+        ORDER BY created_at ASC
+        "#,
     )
     .bind(conversation_id)
     .persistent(false)
