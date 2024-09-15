@@ -103,7 +103,8 @@ impl App {
             KeyCode::Char('c') | KeyCode::Char('C') => {
                 if key_event.modifiers == KeyModifiers::CONTROL {
                     self.running = false;
-                } else {
+                }
+                if let AppFocus::Prompt = self.current_focus() {
                     self.prompt.handle_input(key_event);
                 }
             }
@@ -121,7 +122,7 @@ impl App {
                             let user_message = db::create_message(
                                 &self.sqlite,
                                 Role::User,
-                                user_prompt,
+                                &user_prompt,
                                 conversation.id,
                             )
                             .await?;

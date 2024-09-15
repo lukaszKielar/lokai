@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{sqlite::SqliteRow, FromRow, Row};
 
-#[derive(Serialize, Deserialize, FromRow, Debug, Clone)]
+#[derive(Serialize, Deserialize, FromRow, Debug, Clone, PartialEq)]
 pub struct Conversation {
     pub id: u32,
     pub name: String,
@@ -29,7 +29,7 @@ impl core::fmt::Display for Role {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Message {
     pub id: u32,
     pub role: Role,

@@ -103,7 +103,7 @@ async fn inference(
         let content = response.message.content.trim().to_string();
 
         let assistant_response =
-            create_message(&sqlite, Role::Assistant, content, conversation_id).await?;
+            create_message(&sqlite, Role::Assistant, &content, conversation_id).await?;
 
         let _ = event_tx.send(Event::Inference(
             assistant_response,
@@ -135,9 +135,9 @@ async fn inference_stream(
             .map(|chunk| chunk.unwrap())
             .map(|chunk| serde_json::from_slice::<OllamaChatResponseStream>(&chunk));
 
-        let mut tx = sqlite.begin().await?;
+        let mut transaction = sqlite.begin().await?;
         let assistant_response =
-            create_message(&mut *tx, Role::Assistant, "".to_string(), conversation_id).await?;
+            create_message(&mut *transaction, Role::Assistant, "", conversation_id).await?;
 
         let mut is_first_chunk = true;
         let mut content = String::new();
@@ -169,8 +169,8 @@ async fn inference_stream(
             }
         }
 
-        update_message(&mut *tx, content, assistant_response.id).await?;
-        tx.commit().await?;
+        update_message(&mut *transaction, &content, assistant_response.id).await?;
+        transaction.commit().await?;
     }
 
     Ok(())
