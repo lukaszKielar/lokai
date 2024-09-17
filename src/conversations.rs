@@ -1,5 +1,9 @@
+use std::ops::{Deref, DerefMut};
+
+use crossterm::event::KeyEvent;
 use ratatui::widgets::{List, ListItem, ListState};
 use sqlx::SqlitePool;
+use tui_textarea::TextArea;
 
 use crate::models::Conversation;
 
@@ -55,5 +59,158 @@ impl Conversations {
             .collect::<Vec<ListItem>>();
 
         List::new(items)
+    }
+}
+
+// TODO: add internal attribute that will define error style and message
+pub struct NewConversationPopup {
+    text: Option<String>,
+    text_area: TextArea<'static>,
+    activated: bool,
+}
+
+#[allow(clippy::derivable_impls)]
+impl Default for NewConversationPopup {
+    fn default() -> Self {
+        Self {
+            text: None,
+            text_area: Default::default(),
+            activated: Default::default(),
+        }
+    }
+}
+
+impl Deref for NewConversationPopup {
+    type Target = TextArea<'static>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.text_area
+    }
+}
+
+impl DerefMut for NewConversationPopup {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.text_area
+    }
+}
+
+impl NewConversationPopup {
+    pub fn clear(&mut self) {
+        self.text_area.select_all();
+        self.text_area.cut();
+        self.text_area.set_yank_text("");
+        self.text = None;
+    }
+
+    pub fn is_activated(&self) -> bool {
+        self.activated
+    }
+
+    pub fn activate(&mut self) {
+        self.activated = true;
+        self.text = Some("".to_string());
+    }
+
+    pub fn deactivate(&mut self) {
+        self.activated = false;
+        self.clear();
+    }
+
+    pub fn handle_input(&mut self, key_event: KeyEvent) {
+        if !self.activated {
+            panic!("Activate popup before you handle input")
+        }
+
+        self.text_area.input(key_event);
+        self.text = Some(self.text_area.lines().join("\n").trim().to_string());
+    }
+
+    pub fn get_content(&self) -> Option<&String> {
+        self.text.as_ref()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crossterm::event::{KeyCode, KeyModifiers};
+
+    use super::*;
+
+    #[test]
+    fn test_activate() {
+        // given
+        let mut popup = NewConversationPopup::default();
+
+        // when
+        popup.activate();
+
+        // then
+        assert!(popup.activated);
+        assert_eq!(popup.text, Some("".to_string()));
+    }
+
+    #[test]
+    fn test_deactivate() {
+        // given
+        let mut popup = NewConversationPopup::default();
+
+        // when
+        popup.deactivate();
+
+        // then
+        assert!(!popup.activated);
+        assert_eq!(popup.text, None);
+    }
+
+    #[test]
+    fn test_handle_input() {
+        // given
+        let mut popup = NewConversationPopup::default();
+        popup.activate();
+
+        // when
+        popup.handle_input(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE));
+        popup.handle_input(KeyEvent::new(KeyCode::Char('H'), KeyModifiers::SHIFT));
+        popup.handle_input(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE));
+        popup.handle_input(KeyEvent::new(KeyCode::Char('l'), KeyModifiers::NONE));
+        popup.handle_input(KeyEvent::new(KeyCode::Char('l'), KeyModifiers::NONE));
+        popup.handle_input(KeyEvent::new(KeyCode::Char('o'), KeyModifiers::NONE));
+        popup.handle_input(KeyEvent::new(KeyCode::Char(','), KeyModifiers::NONE));
+        popup.handle_input(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE));
+        popup.handle_input(KeyEvent::new(KeyCode::Char('W'), KeyModifiers::SHIFT));
+        popup.handle_input(KeyEvent::new(KeyCode::Char('o'), KeyModifiers::NONE));
+        popup.handle_input(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE));
+        popup.handle_input(KeyEvent::new(KeyCode::Char('l'), KeyModifiers::NONE));
+        popup.handle_input(KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE));
+        popup.handle_input(KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE));
+        popup.handle_input(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE));
+
+        // then
+        assert_eq!(popup.text, Some("Hello, World!".to_string()));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_handle_input_not_activated() {
+        // given
+        let mut popup = NewConversationPopup::default();
+
+        // when
+        popup.handle_input(KeyEvent::new(KeyCode::Char('H'), KeyModifiers::SHIFT));
+    }
+
+    #[test]
+    fn test_clear() {
+        // given
+        let mut popup = NewConversationPopup::default();
+        popup.activate();
+        popup.handle_input(KeyEvent::new(KeyCode::Char('H'), KeyModifiers::SHIFT));
+
+        // when
+        popup.clear();
+
+        // then
+        assert!(popup.activated);
+        assert_eq!(popup.text, None);
     }
 }

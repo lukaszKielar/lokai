@@ -14,11 +14,14 @@
 -   [ ] Chat
     -   [ ] Highlighting code snippets returned by LLM
     -   [ ] Ability to copy chat or selected messages to clipboard
+-   [ ] Prompt
+    -   [ ] Set prompt's border to different colors depending on the factors like: empty prompt, LLM still replying, error
 -   [ ] Ollama
     -   [ ] Downloading models (in the background)
     -   [ ] Polling Ollama Server to get the status - presenting status to users
     -   [ ] Present all available local models
 -   [ ] Pop up or bottom bar presenting shortcuts
+-   [ ] Bar that presents sliding messages (iterator for a piece of text that moves from right to left)
 -   [ ] Tracing - log events for file
 -   [ ] Tests
     -   [ ] Improve unit test coverage

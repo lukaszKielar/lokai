@@ -4,7 +4,7 @@ use tokio::sync::mpsc::{self, Sender, UnboundedSender};
 
 use crate::{
     chat::Chat,
-    conversations::Conversations,
+    conversations::{Conversations, NewConversationPopup},
     db,
     event::{Event, InferenceType},
     models::{Message, Role},
@@ -50,6 +50,7 @@ pub struct App {
     pub chat: Chat,
     pub conversations: Conversations,
     pub prompt: Prompt,
+    pub new_conversation_popup: NewConversationPopup,
     focus: AppFocus,
     event_tx: UnboundedSender<Event>,
     inference_tx: Sender<Message>,
@@ -71,6 +72,7 @@ impl App {
             running: true,
             sqlite: sqlite.clone(),
             _ollama: Ollama::new(sqlite, inference_rx, event_tx),
+            new_conversation_popup: Default::default(),
         }
     }
 
@@ -103,12 +105,53 @@ impl App {
             KeyCode::Char('c') | KeyCode::Char('C') => {
                 if key_event.modifiers == KeyModifiers::CONTROL {
                     self.running = false;
+
+                    return Ok(());
                 }
+
+                if self.new_conversation_popup.is_activated() {
+                    self.new_conversation_popup.handle_input(key_event);
+
+                    return Ok(());
+                }
+
+                if let AppFocus::Prompt = self.current_focus() {
+                    self.prompt.handle_input(key_event);
+                }
+            }
+            // Ctrl + n
+            KeyCode::Char('n') | KeyCode::Char('N') => {
+                if key_event.modifiers == KeyModifiers::CONTROL {
+                    self.new_conversation_popup.activate();
+
+                    return Ok(());
+                }
+
+                if self.new_conversation_popup.is_activated() {
+                    self.new_conversation_popup.handle_input(key_event);
+
+                    return Ok(());
+                }
+
                 if let AppFocus::Prompt = self.current_focus() {
                     self.prompt.handle_input(key_event);
                 }
             }
             KeyCode::Enter => {
+                if self.new_conversation_popup.is_activated() {
+                    // TODO: add here Option<Error> that will hold error message for draw function
+                    // e.g. when content of the popup is an empty string I want to show to the user
+                    // message that it cannot be null, as well as use red color to indicate problem
+                    if let Some(conversation_name) = self.new_conversation_popup.get_content() {
+                        let new_conversation =
+                            db::create_conversation(&self.sqlite, conversation_name).await?;
+                        self.conversations.push(new_conversation);
+                        self.new_conversation_popup.deactivate();
+                    }
+
+                    return Ok(());
+                }
+
                 // NOTE: crossterm currently cannot recognise combination of Enter+Shift.
                 // KeyEvent.modifiers are not properly registered, so Enter+Shift is seen as regular Enter.
                 // https://github.com/crossterm-rs/crossterm/issues/685
@@ -168,6 +211,12 @@ impl App {
                 }
             },
             KeyCode::Esc => {
+                if self.new_conversation_popup.is_activated() {
+                    self.new_conversation_popup.deactivate();
+
+                    return Ok(());
+                }
+
                 if let AppFocus::Conversation = self.current_focus() {
                     self.conversations.unselect();
                     self.chat.reset();
@@ -176,6 +225,12 @@ impl App {
             KeyCode::Tab => self.next_focus(),
             KeyCode::BackTab => self.previous_focus(),
             _ => {
+                if self.new_conversation_popup.is_activated() {
+                    self.new_conversation_popup.handle_input(key_event);
+
+                    return Ok(());
+                }
+
                 if let AppFocus::Prompt = self.current_focus() {
                     self.prompt.handle_input(key_event);
                 }

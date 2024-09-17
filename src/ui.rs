@@ -1,7 +1,9 @@
 use ratatui::{
-    layout::{Alignment, Constraint, Direction, Layout},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Style, Stylize},
-    widgets::{Block, BorderType, ListDirection, Padding, Scrollbar, ScrollbarOrientation},
+    widgets::{
+        Block, BorderType, Borders, Clear, ListDirection, Padding, Scrollbar, ScrollbarOrientation,
+    },
     Frame,
 };
 use textwrap::Options;
@@ -94,6 +96,11 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     );
 
     // TODO: I need to put text to new line when it reaches width of the block
+    // TODO: set prompt to different colors depending on the state of LLM response
+    // 1 - green - prompt in a good shape (non empty string)
+    // 2 - orange - waiting for LLM's response
+    // 3 - red - when user is trying to send empty string or when LLM is still replying
+    // 4 - white - initial state (user hasn't started typing yet), also empty prompt
     app.prompt.set_block(
         Block::bordered()
             .title("PROMPT")
@@ -104,4 +111,19 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             }),
     );
     frame.render_widget(&*app.prompt, messages_layout[1]);
+
+    if app.new_conversation_popup.is_activated() {
+        app.new_conversation_popup.set_block(
+            Block::new()
+                .title("Add Conversation")
+                .title_style(Style::new().bold())
+                .borders(Borders::ALL)
+                .border_style(Style::new().red()),
+        );
+        // height = 3 = 1 (top border) + 1 (actual text line) + 1 (bottom border)
+        let popup_area = Rect::new(30, 0, 30, 3);
+
+        frame.render_widget(Clear, popup_area);
+        frame.render_widget(&*app.new_conversation_popup, popup_area);
+    }
 }
