@@ -1,6 +1,6 @@
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Style, Stylize},
+    style::{Color, Style, Stylize},
     widgets::{
         Block, BorderType, Borders, Clear, ListDirection, Padding, Scrollbar, ScrollbarOrientation,
     },
@@ -17,6 +17,12 @@ const FOCUS_BORDER_TYPE: BorderType = BorderType::Double;
 const NORMAL_BORDER_TYPE: BorderType = BorderType::Rounded;
 
 pub fn render(app: &mut App, frame: &mut Frame) {
+    let dimmed = app.new_conversation_popup.is_activated();
+    let color = match dimmed {
+        true => Color::DarkGray,
+        false => Color::White,
+    };
+
     let area = frame.area();
 
     let chunks = Layout::default()
@@ -28,6 +34,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     let conversations = app
         .conversations
         .as_list_widget(|conversation| conversation.name.trim().to_owned())
+        .style(color)
         .block(
             Block::bordered()
                 .title("CONVERSATIONS")
@@ -84,13 +91,15 @@ pub fn render(app: &mut App, frame: &mut Frame) {
                 })
                 .padding(message_padding),
         )
+        .style(color)
         .scroll((app.chat.vertical_scroll as u16, 0));
     frame.render_widget(messages, messages_layout[0]);
 
     frame.render_stateful_widget(
         Scrollbar::new(ScrollbarOrientation::VerticalRight)
             .begin_symbol(Some("↑"))
-            .end_symbol(Some("↓")),
+            .end_symbol(Some("↓"))
+            .style(color),
         messages_layout[0],
         &mut app.chat.vertical_scrollbar_state,
     );
@@ -108,22 +117,81 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             .border_type(match app.current_focus() {
                 AppFocus::Prompt => FOCUS_BORDER_TYPE,
                 _ => NORMAL_BORDER_TYPE,
-            }),
+            })
+            .style(color),
     );
     frame.render_widget(&*app.prompt, messages_layout[1]);
 
+    // TODO: dimm other components when popup is active
     if app.new_conversation_popup.is_activated() {
+        let padding = 2u16;
+        let (popup_width, popup_height) = {
+            let mut width = area.width / 10;
+            if width < 30 {
+                width = 30;
+            }
+
+            (width, 3)
+        };
+        let (popup_x, popup_y) = calculate_coordinates(
+            (area.width, area.height),
+            (popup_width + padding, popup_height + padding),
+        );
+        let outer_popup_area = Rect::new(
+            popup_x,
+            popup_y,
+            popup_width + padding,
+            popup_height + padding,
+        );
+        frame.render_widget(Clear, outer_popup_area);
+
         app.new_conversation_popup.set_block(
             Block::new()
                 .title("Add Conversation")
                 .title_style(Style::new().bold())
                 .borders(Borders::ALL)
-                .border_style(Style::new().red()),
+                .border_type(BorderType::Rounded)
+                .style(Color::White),
         );
-        // height = 3 = 1 (top border) + 1 (actual text line) + 1 (bottom border)
-        let popup_area = Rect::new(30, 0, 30, 3);
+        let (popup_x, popup_y) =
+            calculate_coordinates((area.width, area.height), (popup_width, popup_height));
+        let inner_popup_area = Rect::new(popup_x, popup_y, popup_width, popup_height);
+        frame.render_widget(&*app.new_conversation_popup, inner_popup_area);
+    }
+}
 
-        frame.render_widget(Clear, popup_area);
-        frame.render_widget(&*app.new_conversation_popup, popup_area);
+fn calculate_coordinates(area_size: (u16, u16), elem_size: (u16, u16)) -> (u16, u16) {
+    (
+        area_size.0 / 2 - elem_size.0 / 2,
+        area_size.1 / 2 - elem_size.1 / 2,
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case((50, 30), (15, 5), (18,13))]
+    #[case((50,30), (10, 2), (20,14))]
+    #[case((40,20), (15,5), (13,8))]
+    #[case((40,10), (10,2), (15,4))]
+    #[case((30, 30), (15,2), (8,14))]
+    #[case((30, 30), (10,29), (10,1))]
+    #[case((25, 5), (15,3), (5,1))]
+    #[case((25, 2), (10,1), (7,1))]
+    #[case((25, 2), (10,2), (7,0))]
+    fn test_calculate_size(
+        #[case] area_size: (u16, u16),
+        #[case] elem_size: (u16, u16),
+        #[case] expected: (u16, u16),
+    ) {
+        // when
+        let output = calculate_coordinates(area_size, elem_size);
+
+        // then
+        assert_eq!(output, expected);
     }
 }
