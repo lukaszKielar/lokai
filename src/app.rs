@@ -66,13 +66,13 @@ impl App {
             chat: Chat::new(sqlite.clone()),
             conversations: Conversations::new(sqlite.clone()),
             prompt: Default::default(),
+            new_conversation_popup: Default::default(),
             focus: Default::default(),
             event_tx: event_tx.clone(),
             inference_tx,
             running: true,
             sqlite: sqlite.clone(),
             _ollama: Ollama::new(sqlite, inference_rx, event_tx),
-            new_conversation_popup: Default::default(),
         }
     }
 
