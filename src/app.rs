@@ -50,6 +50,9 @@ pub struct App {
     pub chat: Chat,
     pub conversations: Conversations,
     pub prompt: Prompt,
+    // TODO: currently both popups can co-exist, it has to change
+    // there can be one popup at a time
+    // TODO: I cannot allow empty conversation
     pub new_conversation_popup: NewConversationPopup,
     pub delete_conversation_popup: DeleteConversationPopup,
     focus: AppFocus,
@@ -129,6 +132,36 @@ impl App {
                     return Ok(());
                 }
 
+                if self.delete_conversation_popup.is_activated() {
+                    self.delete_conversation_popup.deactivate();
+
+                    return Ok(());
+                }
+
+                if self.new_conversation_popup.is_activated() {
+                    self.new_conversation_popup.handle_input(key_event);
+
+                    return Ok(());
+                }
+
+                if let AppFocus::Prompt = self.current_focus() {
+                    self.prompt.handle_input(key_event);
+                }
+            }
+            KeyCode::Char('y') | KeyCode::Char('Y') => {
+                if self.delete_conversation_popup.is_activated() {
+                    if let Some(conversation) = self.conversations.currently_selected() {
+                        db::delete_conversation(&self.sqlite, conversation.id).await?;
+                        self.conversations.delete_conversation(conversation);
+                        self.chat.reset();
+                    }
+                    // we deactivate anyway, if there was conversation it's gone now
+                    // if there wasn't any, no need to keep popup anymore
+                    self.delete_conversation_popup.deactivate();
+
+                    return Ok(());
+                }
+
                 if self.new_conversation_popup.is_activated() {
                     self.new_conversation_popup.handle_input(key_event);
 
@@ -154,14 +187,14 @@ impl App {
                     return Ok(());
                 }
 
+                // enter triggers deletion - this is default behaviour
                 if self.delete_conversation_popup.is_activated() {
                     if let Some(conversation) = self.conversations.currently_selected() {
-                        if self.delete_conversation_popup.yes() {
-                            db::delete_conversation(&self.sqlite, conversation.id).await?;
-                            self.conversations.delete_conversation(conversation);
-                            self.chat.reset();
-                        }
+                        db::delete_conversation(&self.sqlite, conversation.id).await?;
+                        self.conversations.delete_conversation(conversation);
+                        self.chat.reset();
                     }
+                    self.delete_conversation_popup.deactivate();
 
                     return Ok(());
                 }
@@ -228,36 +261,6 @@ impl App {
                     self.prompt.handle_input(key_event);
                 }
             },
-            KeyCode::Right => {
-                if self.delete_conversation_popup.is_activated() {
-                    return Ok(());
-                }
-
-                if self.new_conversation_popup.is_activated() {
-                    self.new_conversation_popup.handle_input(key_event);
-
-                    return Ok(());
-                }
-
-                if let AppFocus::Prompt = self.current_focus() {
-                    self.prompt.handle_input(key_event);
-                }
-            }
-            KeyCode::Left => {
-                if self.delete_conversation_popup.is_activated() {
-                    return Ok(());
-                }
-
-                if self.new_conversation_popup.is_activated() {
-                    self.new_conversation_popup.handle_input(key_event);
-
-                    return Ok(());
-                }
-
-                if let AppFocus::Prompt = self.current_focus() {
-                    self.prompt.handle_input(key_event);
-                }
-            }
             KeyCode::Esc => {
                 if self.new_conversation_popup.is_activated() {
                     self.new_conversation_popup.deactivate();

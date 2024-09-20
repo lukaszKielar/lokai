@@ -18,7 +18,8 @@ const FOCUS_BORDER_TYPE: BorderType = BorderType::Double;
 const NORMAL_BORDER_TYPE: BorderType = BorderType::Rounded;
 
 pub fn render(app: &mut App, frame: &mut Frame) {
-    let dimmed = app.new_conversation_popup.is_activated();
+    let dimmed =
+        app.new_conversation_popup.is_activated() | app.delete_conversation_popup.is_activated();
     let color = match dimmed {
         true => Color::DarkGray,
         false => Color::White,
@@ -161,39 +162,19 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     }
 
     if app.delete_conversation_popup.is_activated() {
-        let padding = 2u16;
-        let (popup_width, popup_height) = (30, 10);
-        let (popup_x, popup_y) = calculate_coordinates(
-            (area.width, area.height),
-            (popup_width + padding, popup_height + padding),
-        );
-        let outer_popup_area = Rect::new(
-            popup_x,
-            popup_y,
-            popup_width + padding,
-            popup_height + padding,
-        );
-        frame.render_widget(Clear, outer_popup_area);
+        let popup_message = "Would you like to delete conversation? <Y/n>";
+        let (popup_width, popup_height) = (popup_message.len() as u16 + 4, 3);
+        let (popup_x, popup_y) =
+            calculate_coordinates((area.width, area.height), (popup_width, popup_height));
 
-        let vertical_layout = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Ratio(1, 2); 2])
-            .split(outer_popup_area);
+        let popup_area = Rect::new(popup_x, popup_y, popup_width, popup_height);
+        frame.render_widget(Clear, popup_area);
 
-        let paragraph = Paragraph::new("Do you really want to remove conversation?")
-            .alignment(Alignment::Center);
-        frame.render_widget(paragraph, vertical_layout[0]);
-
-        let horizontal_lower_layout = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Ratio(1, 2); 2])
-            .split(vertical_layout[1]);
-        let confirm_button =
-            Paragraph::new("Yes").block(Block::bordered().border_type(BorderType::Rounded));
-        frame.render_widget(confirm_button, horizontal_lower_layout[0]);
-        let cancel_button =
-            Paragraph::new("Cancel").block(Block::bordered().border_type(BorderType::Rounded));
-        frame.render_widget(cancel_button, horizontal_lower_layout[1]);
+        let paragraph = Paragraph::new(popup_message)
+            .centered()
+            .block(Block::bordered().border_type(BorderType::Rounded))
+            .style(Color::White);
+        frame.render_widget(paragraph, popup_area);
     }
 }
 
