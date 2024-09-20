@@ -2,7 +2,8 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style, Stylize},
     widgets::{
-        Block, BorderType, Borders, Clear, ListDirection, Padding, Scrollbar, ScrollbarOrientation,
+        Block, BorderType, Borders, Clear, ListDirection, Padding, Paragraph, Scrollbar,
+        ScrollbarOrientation,
     },
     Frame,
 };
@@ -157,6 +158,42 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             calculate_coordinates((area.width, area.height), (popup_width, popup_height));
         let inner_popup_area = Rect::new(popup_x, popup_y, popup_width, popup_height);
         frame.render_widget(&*app.new_conversation_popup, inner_popup_area);
+    }
+
+    if app.delete_conversation_popup.is_activated() {
+        let padding = 2u16;
+        let (popup_width, popup_height) = (30, 10);
+        let (popup_x, popup_y) = calculate_coordinates(
+            (area.width, area.height),
+            (popup_width + padding, popup_height + padding),
+        );
+        let outer_popup_area = Rect::new(
+            popup_x,
+            popup_y,
+            popup_width + padding,
+            popup_height + padding,
+        );
+        frame.render_widget(Clear, outer_popup_area);
+
+        let vertical_layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Ratio(1, 2); 2])
+            .split(outer_popup_area);
+
+        let paragraph = Paragraph::new("Do you really want to remove conversation?")
+            .alignment(Alignment::Center);
+        frame.render_widget(paragraph, vertical_layout[0]);
+
+        let horizontal_lower_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Ratio(1, 2); 2])
+            .split(vertical_layout[1]);
+        let confirm_button =
+            Paragraph::new("Yes").block(Block::bordered().border_type(BorderType::Rounded));
+        frame.render_widget(confirm_button, horizontal_lower_layout[0]);
+        let cancel_button =
+            Paragraph::new("Cancel").block(Block::bordered().border_type(BorderType::Rounded));
+        frame.render_widget(cancel_button, horizontal_lower_layout[1]);
     }
 }
 

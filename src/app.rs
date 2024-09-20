@@ -4,7 +4,7 @@ use tokio::sync::mpsc::{self, Sender, UnboundedSender};
 
 use crate::{
     chat::Chat,
-    conversations::{Conversations, NewConversationPopup},
+    conversations::{Conversations, DeleteConversationPopup, NewConversationPopup},
     db,
     event::{Event, InferenceType},
     models::{Message, Role},
@@ -51,6 +51,7 @@ pub struct App {
     pub conversations: Conversations,
     pub prompt: Prompt,
     pub new_conversation_popup: NewConversationPopup,
+    pub delete_conversation_popup: DeleteConversationPopup,
     focus: AppFocus,
     event_tx: UnboundedSender<Event>,
     inference_tx: Sender<Message>,
@@ -66,13 +67,14 @@ impl App {
             chat: Chat::new(sqlite.clone()),
             conversations: Conversations::new(sqlite.clone()),
             prompt: Default::default(),
+            new_conversation_popup: Default::default(),
+            delete_conversation_popup: Default::default(),
             focus: Default::default(),
             event_tx: event_tx.clone(),
             inference_tx,
             running: true,
             sqlite: sqlite.clone(),
             _ollama: Ollama::new(sqlite, inference_rx, event_tx),
-            new_conversation_popup: Default::default(),
         }
     }
 
@@ -152,6 +154,18 @@ impl App {
                     return Ok(());
                 }
 
+                if self.delete_conversation_popup.is_activated() {
+                    if let Some(conversation) = self.conversations.currently_selected() {
+                        if self.delete_conversation_popup.yes() {
+                            db::delete_conversation(&self.sqlite, conversation.id).await?;
+                            self.conversations.delete_conversation(conversation);
+                            self.chat.reset();
+                        }
+                    }
+
+                    return Ok(());
+                }
+
                 // NOTE: crossterm currently cannot recognise combination of Enter+Shift.
                 // KeyEvent.modifiers are not properly registered, so Enter+Shift is seen as regular Enter.
                 // https://github.com/crossterm-rs/crossterm/issues/685
@@ -214,9 +228,45 @@ impl App {
                     self.prompt.handle_input(key_event);
                 }
             },
+            KeyCode::Right => {
+                if self.delete_conversation_popup.is_activated() {
+                    return Ok(());
+                }
+
+                if self.new_conversation_popup.is_activated() {
+                    self.new_conversation_popup.handle_input(key_event);
+
+                    return Ok(());
+                }
+
+                if let AppFocus::Prompt = self.current_focus() {
+                    self.prompt.handle_input(key_event);
+                }
+            }
+            KeyCode::Left => {
+                if self.delete_conversation_popup.is_activated() {
+                    return Ok(());
+                }
+
+                if self.new_conversation_popup.is_activated() {
+                    self.new_conversation_popup.handle_input(key_event);
+
+                    return Ok(());
+                }
+
+                if let AppFocus::Prompt = self.current_focus() {
+                    self.prompt.handle_input(key_event);
+                }
+            }
             KeyCode::Esc => {
                 if self.new_conversation_popup.is_activated() {
                     self.new_conversation_popup.deactivate();
+
+                    return Ok(());
+                }
+
+                if self.delete_conversation_popup.is_activated() {
+                    self.delete_conversation_popup.deactivate();
 
                     return Ok(());
                 }
@@ -230,11 +280,17 @@ impl App {
             KeyCode::BackTab => self.previous_focus(),
             KeyCode::Delete => {
                 if let AppFocus::Conversation = self.current_focus() {
-                    if let Some(conversation) = self.conversations.currently_selected() {
-                        db::delete_conversation(&self.sqlite, conversation.id).await?;
-                        self.conversations.delete_conversation(conversation);
-                        self.chat.reset();
+                    if self.conversations.currently_selected().is_some() {
+                        if self.new_conversation_popup.is_activated() {
+                            self.new_conversation_popup.deactivate();
+                        }
+
+                        if !self.delete_conversation_popup.is_activated() {
+                            self.delete_conversation_popup.activate();
+                        }
                     }
+
+                    return Ok(());
                 }
             }
             _ => {

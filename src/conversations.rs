@@ -141,6 +141,55 @@ impl NewConversationPopup {
     }
 }
 
+enum YesOrNo {
+    Yes,
+    No,
+}
+
+pub struct DeleteConversationPopup {
+    activated: bool,
+    yes_or_no: YesOrNo,
+}
+
+#[allow(clippy::derivable_impls)]
+impl Default for DeleteConversationPopup {
+    fn default() -> Self {
+        Self {
+            activated: Default::default(),
+            yes_or_no: YesOrNo::No,
+        }
+    }
+}
+
+impl DeleteConversationPopup {
+    pub fn yes(&self) -> bool {
+        match self.yes_or_no {
+            YesOrNo::Yes => true,
+            YesOrNo::No => false,
+        }
+    }
+
+    pub fn is_activated(&self) -> bool {
+        self.activated
+    }
+
+    pub fn activate(&mut self) {
+        self.activated = true;
+    }
+
+    pub fn deactivate(&mut self) {
+        self.activated = false;
+    }
+
+    pub fn confirm(&mut self) {
+        self.yes_or_no = YesOrNo::Yes;
+    }
+
+    pub fn cancel(&mut self) {
+        self.yes_or_no = YesOrNo::No;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crossterm::event::{KeyCode, KeyModifiers};
