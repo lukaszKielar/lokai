@@ -178,6 +178,8 @@ impl App {
             }
             KeyCode::Down => match self.current_focus() {
                 AppFocus::Conversation => {
+                    // TODO: fix screen flickering when currently selected conversation is on the bottom of the screen
+                    // I don't need to reload messages again, as I cannot select any other conversation, there's nothing after
                     self.conversations.down();
                     if let Some(conversation) = self.conversations.currently_selected() {
                         self.chat.load_messages(conversation.id).await?;
@@ -195,6 +197,8 @@ impl App {
             },
             KeyCode::Up => match self.current_focus() {
                 AppFocus::Conversation => {
+                    // TODO: fix screen flickering when currently selected conversation is on top of the screen
+                    // I don't need to reload messages again, as I cannot select any other conversation, there's nothing before
                     self.conversations.up();
                     if let Some(conversation) = self.conversations.currently_selected() {
                         self.chat.load_messages(conversation.id).await?;
@@ -224,6 +228,15 @@ impl App {
             }
             KeyCode::Tab => self.next_focus(),
             KeyCode::BackTab => self.previous_focus(),
+            KeyCode::Delete => {
+                if let AppFocus::Conversation = self.current_focus() {
+                    if let Some(conversation) = self.conversations.currently_selected() {
+                        db::delete_conversation(&self.sqlite, conversation.id).await?;
+                        self.conversations.delete_conversation(conversation);
+                        self.chat.reset();
+                    }
+                }
+            }
             _ => {
                 if self.new_conversation_popup.is_activated() {
                     self.new_conversation_popup.handle_input(key_event);

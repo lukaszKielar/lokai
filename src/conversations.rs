@@ -22,6 +22,17 @@ impl Conversations {
         }
     }
 
+    pub fn delete_conversation(&mut self, conversation: Conversation) {
+        if let Some(index) = self
+            .conversations
+            .iter()
+            .position(|c| c.id == conversation.id)
+        {
+            self.conversations.remove(index);
+            self.unselect();
+        }
+    }
+
     pub fn set_conversations(&mut self, conversations: Vec<Conversation>) {
         self.conversations = conversations;
     }
