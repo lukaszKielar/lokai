@@ -126,26 +126,11 @@ pub fn render(app: &mut App, frame: &mut Frame) {
 
     // TODO: dimm other components when popup is active
     if app.new_conversation_popup.is_activated() {
-        let padding = 2u16;
-        let (popup_width, popup_height) = {
-            let mut width = area.width / 10;
-            if width < 30 {
-                width = 30;
-            }
-
-            (width, 3)
-        };
-        let (popup_x, popup_y) = calculate_coordinates(
-            (area.width, area.height),
-            (popup_width + padding, popup_height + padding),
-        );
-        let outer_popup_area = Rect::new(
-            popup_x,
-            popup_y,
-            popup_width + padding,
-            popup_height + padding,
-        );
-        frame.render_widget(Clear, outer_popup_area);
+        let (popup_width, popup_height) = (50, 3);
+        let (popup_x, popup_y) =
+            calculate_coordinates((area.width, area.height), (popup_width, popup_height));
+        let popup_area = Rect::new(popup_x, popup_y, popup_width, popup_height);
+        frame.render_widget(Clear, popup_area);
 
         app.new_conversation_popup.set_block(
             Block::new()
@@ -155,15 +140,12 @@ pub fn render(app: &mut App, frame: &mut Frame) {
                 .border_type(BorderType::Rounded)
                 .style(Color::White),
         );
-        let (popup_x, popup_y) =
-            calculate_coordinates((area.width, area.height), (popup_width, popup_height));
-        let inner_popup_area = Rect::new(popup_x, popup_y, popup_width, popup_height);
-        frame.render_widget(&*app.new_conversation_popup, inner_popup_area);
+        frame.render_widget(&*app.new_conversation_popup, popup_area);
     }
 
     if app.delete_conversation_popup.is_activated() {
         let popup_message = "Would you like to delete conversation? <Y/n>";
-        let (popup_width, popup_height) = (popup_message.len() as u16 + 4, 3);
+        let (popup_width, popup_height) = (50, 3);
         let (popup_x, popup_y) =
             calculate_coordinates((area.width, area.height), (popup_width, popup_height));
 
