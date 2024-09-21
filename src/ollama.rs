@@ -10,12 +10,8 @@ use crate::{
     db::{create_message, get_messages, update_message},
     event::{Event, InferenceType},
     models::{Message, Role},
-    AppResult,
+    AppResult, APP_CONFIG,
 };
-
-// TODO: use AppConfig instead
-static DEFAULT_LLM_MODEL: &str = "phi3:3.8b";
-static OLLAMA_URL: &str = "http://host.docker.internal:11434";
 
 pub struct Ollama {
     _join_handle: JoinHandle<()>,
@@ -92,10 +88,17 @@ async fn inference(
         let conversation_id = inference_message.conversation_id;
         let messages = get_messages(&sqlite, conversation_id).await?;
 
-        let params = OllamaChatParams::new(DEFAULT_LLM_MODEL.to_string(), messages, false);
+        let params = OllamaChatParams::new(
+            APP_CONFIG.read().await.get_default_llm_model().to_string(),
+            messages,
+            false,
+        );
 
         let response = reqwest_client
-            .post(format!("{}/api/chat", OLLAMA_URL))
+            .post(format!(
+                "{}/api/chat",
+                APP_CONFIG.read().await.get_ollama_url()
+            ))
             .json(&params)
             .send()
             .await?
@@ -126,10 +129,17 @@ async fn inference_stream(
         let conversation_id = inference_message.conversation_id;
         let messages = get_messages(&sqlite, conversation_id).await?;
 
-        let params = OllamaChatParams::new(DEFAULT_LLM_MODEL.to_string(), messages, true);
+        let params = OllamaChatParams::new(
+            APP_CONFIG.read().await.get_default_llm_model().to_string(),
+            messages,
+            true,
+        );
 
         let mut stream = reqwest_client
-            .post(format!("{}/api/chat", OLLAMA_URL))
+            .post(format!(
+                "{}/api/chat",
+                APP_CONFIG.read().await.get_ollama_url()
+            ))
             .json(&params)
             .send()
             .await?

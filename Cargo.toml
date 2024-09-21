@@ -7,10 +7,10 @@ authors = ["Lukasz Kielar <kielar.lukasz@hotmail.com>"]
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
-config = { version = "0.14", features = ["toml"] }
+clap = { version = "4.5", features = ["derive"] }
 crossterm = { version = "0.28", features = ["event-stream"] }
-dirs = "5.0.1"
 futures = "0.3"
+once_cell = "1.19"
 ratatui = "0.28"
 reqwest = { version = "0.12", default-features = false, features = [
     "json",

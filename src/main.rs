@@ -1,9 +1,11 @@
 use std::{error::Error, io, result::Result};
 
-use config::AppConfig;
+use clap::Parser;
+use config::{AppConfig, AppConfigCliArgs};
+use once_cell::sync::Lazy;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use sqlx::{sqlite::SqlitePoolOptions, Executor};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, RwLock};
 
 use crate::{app::App, event::EventHandler, tui::Tui};
 
@@ -21,10 +23,15 @@ pub mod ui;
 
 pub type AppResult<T> = Result<T, Box<dyn Error>>;
 
+static APP_CONFIG: Lazy<RwLock<AppConfig>> = Lazy::new(|| RwLock::new(AppConfig::default()));
+
 #[tokio::main]
 async fn main() -> AppResult<()> {
-    // TODO: use OnceCell with RWLock
-    let config = AppConfig::load();
+    let cli_args = AppConfigCliArgs::parse();
+    {
+        let mut app_config = APP_CONFIG.write().await;
+        app_config.update_from_cli_args(cli_args);
+    }
 
     let sqlite = SqlitePoolOptions::new()
         .min_connections(10)
@@ -35,7 +42,7 @@ async fn main() -> AppResult<()> {
                 Ok(())
             })
         })
-        .connect(&config.database_url)
+        .connect(APP_CONFIG.read().await.get_database_url())
         .await
         .expect("Cannot make a DB pool");
 
