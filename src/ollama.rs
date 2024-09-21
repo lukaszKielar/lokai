@@ -13,6 +13,7 @@ use crate::{
     AppResult,
 };
 
+// TODO: use AppConfig instead
 static DEFAULT_LLM_MODEL: &str = "phi3:3.8b";
 static OLLAMA_URL: &str = "http://host.docker.internal:11434";
 
@@ -70,6 +71,7 @@ pub struct OllamaChatParams {
 }
 
 impl OllamaChatParams {
+    // TODO: fire GET request to see if the Ollama server is up and running
     pub fn new<T: Into<OllamaMessage>>(model: String, messages: Vec<T>, stream: bool) -> Self {
         Self {
             model,

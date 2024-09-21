@@ -1,5 +1,6 @@
-use std::{env, error::Error, io, result::Result};
+use std::{error::Error, io, result::Result};
 
+use config::AppConfig;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use sqlx::{sqlite::SqlitePoolOptions, Executor};
 use tokio::sync::mpsc;
@@ -8,6 +9,7 @@ use crate::{app::App, event::EventHandler, tui::Tui};
 
 pub mod app;
 pub mod chat;
+pub mod config;
 pub mod conversations;
 pub mod db;
 pub mod event;
@@ -21,6 +23,9 @@ pub type AppResult<T> = Result<T, Box<dyn Error>>;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
+    // TODO: use OnceCell with RWLock
+    let config = AppConfig::load();
+
     let sqlite = SqlitePoolOptions::new()
         .min_connections(10)
         .max_connections(50)
@@ -30,7 +35,7 @@ async fn main() -> AppResult<()> {
                 Ok(())
             })
         })
-        .connect(&env::var("DATABASE_URL").unwrap_or("sqlite::memory:".to_string()))
+        .connect(&config.database_url)
         .await
         .expect("Cannot make a DB pool");
 

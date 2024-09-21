@@ -7,9 +7,11 @@
     -   ollama URL
 -   [ ] Settings persistance - save TOML file in user's dir
 -   [ ] Better error handling - new Result and Error structs allowing for clear distinction between critical and non-critical errors
+-   [ ] If nothing is presented in Chat area print shortcuts and welcoming graphics (logo)
+    -   [ ] Create logo
 -   [ ] Conversations
     -   [x] Adding new conversation - design dedicated pop up
-    -   [ ] Deleting conversation
+    -   [x] Deleting conversation
     -   [ ] Changing settings for conversations, e.g. LLM model
 -   [ ] Chat
     -   [ ] Highlighting code snippets returned by LLM
@@ -17,7 +19,6 @@
 -   [ ] Prompt
     -   [ ] Set prompt's border to different colors depending on the factors like: empty prompt, LLM still replying, error
 -   [ ] Ollama
-    -   [ ] Automatically start and stop Ollama server when app starts/stops/exists
     -   [ ] Downloading models (in the background)
     -   [ ] Polling Ollama Server to get the status - presenting status to users
     -   [ ] Present all available local models
