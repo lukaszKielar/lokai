@@ -141,7 +141,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         app.new_conversation_popup
             .set_placeholder_style(Style::default());
         app.new_conversation_popup
-            .set_placeholder_text("Short description of conversation");
+            .set_placeholder_text("Give a name to your new conversation");
         frame.render_widget(&*app.new_conversation_popup, popup_area);
     }
 

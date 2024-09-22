@@ -36,7 +36,7 @@ impl AppConfig {
     }
 
     pub fn update_from_cli_args(&mut self, cli_args: AppConfigCliArgs) {
-        if let Some(ref ollama_url) = cli_args.database_url {
+        if let Some(ref ollama_url) = cli_args.ollama_url {
             self.ollama_url = ollama_url.to_string();
         }
 
