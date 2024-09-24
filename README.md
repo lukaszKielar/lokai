@@ -62,27 +62,27 @@ cargo run -- --help
 
 ## Roadmap
 
--   [ ] Dedicated settings tab, allowing to change things like:
+-   [ ] ? Dedicated settings tab, allowing to change things like:
     -   default LLM model
     -   ollama URL
--   [ ] Settings persistance - save TOML file in user's dir
+-   [ ] ? Settings persistance - save TOML file in user's dir
 -   [ ] Better error handling - new Result and Error structs allowing for clear distinction between critical and non-critical errors
 -   [ ] If nothing is presented in Chat area print shortcuts and welcoming graphics (logo)
     -   [ ] Create logo
 -   [ ] Conversations
     -   [x] Adding new conversation - design dedicated pop up
     -   [x] Deleting conversation
-    -   [ ] Changing settings for conversations, e.g. LLM model
+    -   [ ] ? Changing settings for conversations, e.g. LLM model
 -   [ ] Chat
     -   [ ] Highlighting code snippets returned by LLM
     -   [ ] Ability to copy chat or selected messages to clipboard
 -   [ ] Prompt
     -   [ ] Set prompt's border to different colors depending on the factors like: empty prompt, LLM still replying, error
--   [ ] Ollama
+-   [ ] ? Ollama
     -   [ ] Downloading models (in the background)
     -   [ ] Polling Ollama Server to get the status - presenting status to users
     -   [ ] Present all available local models
--   [ ] Pop up or presenting shortcuts
+-   [ ] Popup or presenting shortcuts
 -   [ ] Bar that presents sliding messages (iterator for a piece of text that moves from right to left)
 -   [ ] Tracing
 -   [ ] Tests
@@ -90,4 +90,4 @@ cargo run -- --help
     -   [ ] Create integration tests
 -   [ ] Documentation improvements
 -   [ ] Release tool to crates.io
--   [ ]
+-   [ ] Use `kalosm` instead of Ollama
