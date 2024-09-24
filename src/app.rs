@@ -279,8 +279,16 @@ impl App {
                     self.chat.reset();
                 }
             }
-            KeyCode::Tab => self.next_focus(),
-            KeyCode::BackTab => self.previous_focus(),
+            KeyCode::Tab => {
+                if !self.new_conversation_popup.is_activated() {
+                    self.next_focus()
+                }
+            },
+            KeyCode::BackTab => {
+                if !self.new_conversation_popup.is_activated() {
+                    self.previous_focus()
+                }
+            },
             KeyCode::Delete => {
                 if let AppFocus::Conversation = self.current_focus() {
                     if self.conversations.currently_selected().is_some() {
