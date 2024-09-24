@@ -7,8 +7,8 @@ use ratatui::{backend::CrosstermBackend, Terminal};
 use std::fs::OpenOptions;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Executor, SqlitePool};
 use tokio::sync::{mpsc, RwLock};
-use tracing::{info, warn, error, Level};
-use tracing_subscriber::fmt::writer::MakeWriterExt;
+use tracing::{info, Level};
+use tracing_subscriber;
 
 use crate::{app::App, event::EventHandler, tui::Tui};
 
@@ -36,8 +36,9 @@ async fn main() -> AppResult<()> {
         .open("app.log")?;
 
     tracing_subscriber::fmt()
+        .json()
         .with_max_level(Level::INFO)
-        .with_writer(file.with_max_level(Level::INFO))
+        .with_writer(file)
         .init();
 
     info!("starting");
