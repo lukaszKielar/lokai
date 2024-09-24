@@ -4,8 +4,11 @@ use clap::Parser;
 use config::{AppConfig, AppConfigCliArgs};
 use once_cell::sync::Lazy;
 use ratatui::{backend::CrosstermBackend, Terminal};
+use std::fs::OpenOptions;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Executor, SqlitePool};
 use tokio::sync::{mpsc, RwLock};
+use tracing::{info, Level};
+use tracing_subscriber;
 
 use crate::{app::App, event::EventHandler, tui::Tui};
 
@@ -27,6 +30,19 @@ static APP_CONFIG: Lazy<RwLock<AppConfig>> = Lazy::new(|| RwLock::new(AppConfig:
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
+    let file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("app.log")?;
+
+    tracing_subscriber::fmt()
+        .json()
+        .with_max_level(Level::INFO)
+        .with_writer(file)
+        .init();
+
+    info!("starting");
+
     let cli_args = AppConfigCliArgs::parse();
     {
         let mut app_config = APP_CONFIG.write().await;
@@ -60,6 +76,8 @@ async fn main() -> AppResult<()> {
     }
 
     tui.exit()?;
+
+    info!("shutting down!");
 
     Ok(())
 }
