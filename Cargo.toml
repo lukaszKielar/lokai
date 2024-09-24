@@ -1,5 +1,5 @@
 [package]
-name = "lokai-tui"
+name = "lokai"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
@@ -7,8 +7,10 @@ authors = ["Lukasz Kielar <kielar.lukasz@hotmail.com>"]
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.5", features = ["derive"] }
 crossterm = { version = "0.28", features = ["event-stream"] }
 futures = "0.3"
+once_cell = "1.19"
 ratatui = "0.28"
 reqwest = { version = "0.12", default-features = false, features = [
     "json",
@@ -16,8 +18,7 @@ reqwest = { version = "0.12", default-features = false, features = [
 ] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-# Tried to install latest (0.8.1 at the time of writing this), but it has a bug
-sqlx = { version = "=0.8.2", default-features = false, features = [
+sqlx = { version = "0.8", default-features = false, features = [
     "chrono",
     "macros",
     "migrate",

@@ -134,12 +134,14 @@ pub fn render(app: &mut App, frame: &mut Frame) {
 
         app.new_conversation_popup.set_block(
             Block::new()
-                .title("Add Conversation")
-                .title_style(Style::new().bold())
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .style(Color::White),
         );
+        app.new_conversation_popup
+            .set_placeholder_style(Style::default());
+        app.new_conversation_popup
+            .set_placeholder_text("Give a name to your new conversation");
         frame.render_widget(&*app.new_conversation_popup, popup_area);
     }
 
