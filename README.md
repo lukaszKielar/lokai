@@ -49,16 +49,16 @@ cargo run -- --help
 
 ## Shortcuts
 
-| Shortcut                         | Action                       | App Context          |
-| -------------------------------- | ---------------------------- | -------------------- |
-| <kbd>Ctrl<kbd> + <kbd>c<kbd>     | Exit                         | Global               |
-| <kbd>Ctrl<kbd> + <kbd>n<kbd>     | Add new conversation         | Global               |
-| <kbd>Tab<kbd>                    | Next focus                   | Global               |
-| <kbd>Shift</kbd> + <kbd>Tab<kbd> | Previous focus               | Global               |
-| <kbd>↑<kbd>/<kbd>↓</kbd>         | Switch between conversations | Conversation sidebar |
-| <kbd>Delete</kbd>                | Delete selected conversation | Conversation sidebar |
-| <kbd>↑<kbd>/<kbd>↓</kbd>         | Scroll up/down               | Chat/Prompt          |
-| <kbd>Esc<kbd>                    | Cancel action                | Popups               |
+| Shortcut                          | Action                       | App Context          |
+| --------------------------------- | ---------------------------- | -------------------- |
+| <kbd>Ctrl</kbd> + <kbd>c</kbd>    | Exit                         | Global               |
+| <kbd>Ctrl</kbd> + <kbd>n</kbd>    | Add new conversation         | Global               |
+| <kbd>Tab</kbd>                    | Next focus                   | Global               |
+| <kbd>Shift</kbd> + <kbd>Tab</kbd> | Previous focus               | Global               |
+| <kbd>↑</kbd>/<kbd>↓</kbd>         | Switch between conversations | Conversation sidebar |
+| <kbd>Delete</kbd>                 | Delete selected conversation | Conversation sidebar |
+| <kbd>↑</kbd>/<kbd>↓</kbd>         | Scroll up/down               | Chat/Prompt          |
+| <kbd>Esc</kbd>                    | Cancel action                | Popups               |
 
 ## Roadmap
 
