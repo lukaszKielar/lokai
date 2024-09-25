@@ -91,3 +91,4 @@ cargo run -- --help
 -   [ ] Documentation improvements
 -   [ ] Release tool to crates.io
 -   [ ] Use `kalosm` instead of Ollama
+-   [ ] Create rust-toolchain.toml file
