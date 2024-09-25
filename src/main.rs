@@ -1,14 +1,12 @@
-use std::{error::Error, io, result::Result, time::Duration};
+use std::{error::Error, io, path::PathBuf, result::Result, time::Duration};
 
 use clap::Parser;
 use config::{AppConfig, AppConfigCliArgs};
 use once_cell::sync::Lazy;
 use ratatui::{backend::CrosstermBackend, Terminal};
-use std::fs::OpenOptions;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Executor, SqlitePool};
 use tokio::sync::{mpsc, RwLock};
 use tracing::{info, Level};
-use tracing_subscriber;
 
 use crate::{app::App, event::EventHandler, tui::Tui};
 
@@ -26,19 +24,32 @@ pub mod ui;
 
 pub type AppResult<T> = Result<T, Box<dyn Error>>;
 
-static APP_CONFIG: Lazy<RwLock<AppConfig>> = Lazy::new(|| RwLock::new(AppConfig::default()));
+static LOKAI_DIR: Lazy<PathBuf> = Lazy::new(|| {
+    let lokai_dir = dirs::home_dir()
+        .unwrap_or_else(|| std::env::current_dir().expect("Cannot get current working directory"))
+        .join(".lokai");
+
+    if !lokai_dir.exists() {
+        std::fs::create_dir(&lokai_dir)
+            .unwrap_or_else(|_| panic!("cannot create {:?} directory", lokai_dir))
+    }
+
+    lokai_dir
+});
+static APP_CONFIG: Lazy<RwLock<AppConfig>> = Lazy::new(|| RwLock::new(AppConfig::init()));
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
-    let file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("app.log")?;
-
+    let logs_dir = LOKAI_DIR.join("logs");
+    if !logs_dir.exists() {
+        std::fs::create_dir(&logs_dir)?
+    }
+    let log_file = tracing_appender::rolling::daily(logs_dir, "lokai.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(log_file);
     tracing_subscriber::fmt()
-        .json()
         .with_max_level(Level::INFO)
-        .with_writer(file)
+        .with_writer(non_blocking)
+        .with_ansi(false)
         .init();
 
     info!("starting");
@@ -46,7 +57,7 @@ async fn main() -> AppResult<()> {
     let cli_args = AppConfigCliArgs::parse();
     {
         let mut app_config = APP_CONFIG.write().await;
-        app_config.update_from_cli_args(cli_args);
+        *app_config = cli_args.into();
     }
 
     if let Err(err) = verify_ollama_server().await {
