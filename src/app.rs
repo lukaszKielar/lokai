@@ -283,12 +283,12 @@ impl App {
                 if !self.new_conversation_popup.is_activated() {
                     self.next_focus()
                 }
-            },
+            }
             KeyCode::BackTab => {
                 if !self.new_conversation_popup.is_activated() {
                     self.previous_focus()
                 }
-            },
+            }
             KeyCode::Delete => {
                 if let AppFocus::Conversation = self.current_focus() {
                     if self.conversations.currently_selected().is_some() {
@@ -352,6 +352,12 @@ impl App {
         Ok(())
     }
 
+    async fn handle_prompt_transcription(&mut self, word: String) -> AppResult<()> {
+        self.prompt.insert_str(word);
+
+        Ok(())
+    }
+
     pub async fn handle_events(&mut self, event: Event) -> AppResult<()> {
         match event {
             Event::TerminalTick => Ok(()),
@@ -363,6 +369,7 @@ impl App {
                 self.handle_inference_event(message).await
             }
             Event::ChatBottomScroll => self.handle_chat_bottom_scroll_event().await,
+            Event::PromptTranscription(word) => self.handle_prompt_transcription(word).await,
         }
     }
 }

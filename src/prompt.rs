@@ -31,6 +31,10 @@ impl Prompt {
     pub fn set_block(&mut self, block: Block<'static>) {
         self.text_area.set_block(block);
     }
+
+    pub fn insert_str<S: AsRef<str>>(&mut self, s: S) {
+        self.text_area.insert_str(s);
+    }
 }
 
 impl Deref for Prompt {

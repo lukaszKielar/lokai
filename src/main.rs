@@ -2,10 +2,13 @@ use std::{error::Error, io, path::PathBuf, result::Result, sync::LazyLock, time:
 
 use clap::Parser;
 use config::{AppConfig, AppConfigCliArgs};
+use kalosm_language::kalosm_llama::Cache;
+use kalosm_sound::{Whisper, WhisperLanguage, WhisperSource};
 use ratatui::{backend::CrosstermBackend, Terminal};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Executor, SqlitePool};
 use tokio::sync::{mpsc, RwLock};
 use tracing::{info, Level};
+use transcribe::Transcriber;
 
 use crate::{app::App, event::EventHandler, tui::Tui};
 
@@ -18,6 +21,7 @@ pub mod event;
 pub mod models;
 pub mod ollama;
 pub mod prompt;
+pub mod transcribe;
 pub mod tui;
 pub mod ui;
 
@@ -67,6 +71,23 @@ async fn main() -> AppResult<()> {
     let sqlite = setup_sqlite_pool().await?;
 
     let (event_tx, event_rx) = mpsc::unbounded_channel();
+
+    let _transcriber = {
+        let cache_dir = LOKAI_DIR.join("kalosm_cache");
+        if !cache_dir.exists() {
+            std::fs::create_dir(&cache_dir)?
+        }
+        let cache = Cache::new(cache_dir);
+
+        let whisper = Whisper::builder()
+            .with_cache(cache)
+            .with_source(WhisperSource::BaseEn)
+            .with_language(Some(WhisperLanguage::English))
+            .build()
+            .await?;
+
+        Transcriber::new(event_tx.clone(), whisper)
+    };
 
     let mut app: App = App::new(sqlite, event_tx.clone());
     app.init().await?;
