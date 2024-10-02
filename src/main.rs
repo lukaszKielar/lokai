@@ -1,8 +1,7 @@
-use std::{error::Error, io, path::PathBuf, result::Result, time::Duration};
+use std::{error::Error, io, path::PathBuf, result::Result, sync::LazyLock, time::Duration};
 
 use clap::Parser;
 use config::{AppConfig, AppConfigCliArgs};
-use once_cell::sync::Lazy;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Executor, SqlitePool};
 use tokio::sync::{mpsc, RwLock};
@@ -24,7 +23,7 @@ pub mod ui;
 
 pub type AppResult<T> = Result<T, Box<dyn Error>>;
 
-static LOKAI_DIR: Lazy<PathBuf> = Lazy::new(|| {
+static LOKAI_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
     let lokai_dir = dirs::home_dir()
         .unwrap_or_else(|| std::env::current_dir().expect("Cannot get current working directory"))
         .join(".lokai");
@@ -36,7 +35,7 @@ static LOKAI_DIR: Lazy<PathBuf> = Lazy::new(|| {
 
     lokai_dir
 });
-static APP_CONFIG: Lazy<RwLock<AppConfig>> = Lazy::new(|| RwLock::new(AppConfig::init()));
+static APP_CONFIG: LazyLock<RwLock<AppConfig>> = LazyLock::new(|| RwLock::new(AppConfig::init()));
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
