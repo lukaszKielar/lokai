@@ -185,7 +185,7 @@ mod tests {
     #[case((25, 5), (15,3), (5,1))]
     #[case((25, 2), (10,1), (7,1))]
     #[case((25, 2), (10,2), (7,0))]
-    fn test_calculate_size(
+    fn test_calculate_coordinates(
         #[case] area_size: (u16, u16),
         #[case] elem_size: (u16, u16),
         #[case] expected: (u16, u16),

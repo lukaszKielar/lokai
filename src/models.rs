@@ -45,19 +45,19 @@ impl FromRow<'_, SqliteRow> for Message {
             .map_err(|err| sqlx::Error::ColumnDecode {
                 index: "role".to_string(),
                 source: err.into(),
-            });
+            })?;
+
         let role = match role {
-            Ok("assistant") => Role::Assistant,
-            Ok("system") => Role::System,
-            Ok("user") => Role::User,
-            Ok(other) => {
+            "assistant" => Role::Assistant,
+            "system" => Role::System,
+            "user" => Role::User,
+            other => {
                 return Err(sqlx::Error::ColumnDecode {
                     index: "role".to_string(),
                     source: format!("Expected one of [assistant, system, user], got [{}]", other)
                         .into(),
                 })
             }
-            Err(err) => return Err(err),
         };
 
         Ok(Message {

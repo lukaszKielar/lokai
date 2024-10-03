@@ -4,7 +4,7 @@ use serde::Deserialize;
 use crate::LOKAI_DIR;
 
 static OLLAMA_URL: &str = "http://localhost:11434";
-static DEFAULT_LLM_MODEL: &str = "phi3:3.8b";
+static DEFAULT_LLM_MODEL: &str = "phi3.5:3.8b";
 
 #[derive(Deserialize, Debug)]
 pub struct AppConfig {
