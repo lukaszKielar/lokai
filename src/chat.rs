@@ -3,6 +3,8 @@ use sqlx::SqlitePool;
 
 use crate::{db, models::Message, AppResult};
 
+const BORDER_SIZE: usize = 1;
+
 // TODO: automatically scroll to the bottom when messages are loaded
 pub struct Chat {
     messages: Vec<Message>,
@@ -112,11 +114,35 @@ impl Chat {
 fn calculate_vertical_scrollbar_content_length(text: &str, area_height: usize) -> usize {
     let lines_of_text = text.lines().collect::<Vec<_>>().len();
     // area has a border which takes 2 additional lines
-    let area_height = area_height - 2;
+    let area_height = area_height - (2 * BORDER_SIZE);
 
     if lines_of_text > area_height {
-        (lines_of_text - area_height) + 2
+        (lines_of_text - area_height) + (2 * BORDER_SIZE)
     } else {
         0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use rstest::rstest;
+
+    #[rstest]
+    #[case("Line 1\nLine 2\nLine 3", 10, 0)]
+    #[case("Line 1\nLine 2\nLine 3\nLine 4\nLine 5", 7, 0)]
+    #[case("Line 1\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6", 7, 3)]
+    #[case("Single line", 5, 0)]
+    #[case("", 5, 0)]
+    fn test_calculate_vertical_scrollbar_content_length(
+        #[case] text: &str,
+        #[case] area_height: usize,
+        #[case] expected: usize,
+    ) {
+        assert_eq!(
+            calculate_vertical_scrollbar_content_length(text, area_height),
+            expected
+        );
     }
 }
