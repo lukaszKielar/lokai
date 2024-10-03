@@ -15,10 +15,10 @@ Ollama server has to be up and running before we start LokAI.
 ollama serve
 ```
 
-Open separate terminal and pull down your favourite model. Default model used by LokAI is `phi3:3.8b`, but you can use any of available [models](https://ollama.com/library).
+Open separate terminal and pull down your favourite model. Default model used by LokAI is `phi3.5:3.8b`, but you can use any of available [models](https://ollama.com/library).
 
 ```bash
-ollama pull phi3:3.8b
+ollama pull phi3.5:3.8b
 ```
 
 Once you have the model you can run LokAI app.
@@ -32,7 +32,7 @@ cargo run  # for more configuration flags see CLI section
 LokAI allow you to set some options through CLI.
 
 -   `ollama-url` [default: `http://localhost:11434`] - if you run LokAI in docker you may need to use `http://host.docker.internal:11434`
--   `default-llm-model` [default: `phi3:3.8b`] - the model you would like to use for all of your conversations. You can pass any model [supported](https://ollama.com/library) by Ollama. **Make sure you have it downloaded before you start LokAI**.
+-   `default-llm-model` [default: `phi3.5:3.8b`] - the model you would like to use for all of your conversations. You can pass any model [supported](https://ollama.com/library) by Ollama. **Make sure you have it downloaded before you start LokAI**.
 -   `database-url` [default: `sqlite::memory:`] - default value spins new in-memory instance that won't persist conversations between restarts. Example value for persistent database `sqlite://db.sqlite3`
 
 To use one, many or all options simply type:
@@ -89,6 +89,4 @@ cargo run -- --help
     -   [ ] Improve unit test coverage
     -   [ ] Create integration tests
 -   [ ] Documentation improvements
--   [ ] Release tool to crates.io
 -   [ ] Use `kalosm` instead of Ollama
--   [ ] Create rust-toolchain.toml file
