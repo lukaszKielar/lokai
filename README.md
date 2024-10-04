@@ -64,6 +64,7 @@ cargo run -- --help
     -   [ ] Set prompt's border to different colors depending on the factors like: empty prompt, LLM still replying, error
     -   [ ] Improve prompt transcription process. Currently there is no way to turn off microphone, and the app constantly listens until its killed. I need to toggle it on/off on demand.
 -   [ ] Popup or presenting shortcuts
+-   [ ] Implement `AppState` for sharing things like DB pool, Whisper, Llama, app config, lokai dir (app config is actually dependent on lokai dir)
 -   [ ] Bar that presents sliding messages (iterator for a piece of text that moves from right to left)
 -   [ ] Tracing
 -   [ ] Tests
