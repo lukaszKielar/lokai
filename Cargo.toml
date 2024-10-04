@@ -1,6 +1,6 @@
 [package]
 name = "lokai"
-version = "0.1.0"
+version = "0.0.1-alpha"
 edition = "2021"
 license = "MIT"
 authors = ["Lukasz Kielar <kielar.lukasz@hotmail.com>"]
