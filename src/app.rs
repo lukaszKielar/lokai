@@ -1,14 +1,15 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use kalosm::language::Llama;
 use sqlx::SqlitePool;
 use tokio::sync::mpsc::{self, Sender, UnboundedSender};
 
 use crate::{
+    assistant::Assistant,
     chat::Chat,
     conversations::{Conversations, DeleteConversationPopup, NewConversationPopup},
     db,
     event::{Event, InferenceType},
     models::{Message, Role},
-    ollama::Ollama,
     prompt::Prompt,
     AppResult,
 };
@@ -60,11 +61,11 @@ pub struct App {
     inference_tx: Sender<Message>,
     running: bool,
     sqlite: SqlitePool,
-    _ollama: Ollama,
+    _assistant: Assistant,
 }
 
 impl App {
-    pub fn new(sqlite: SqlitePool, event_tx: UnboundedSender<Event>) -> Self {
+    pub fn new(sqlite: SqlitePool, event_tx: UnboundedSender<Event>, llama: Llama) -> Self {
         let (inference_tx, inference_rx) = mpsc::channel::<Message>(10);
         Self {
             chat: Chat::new(sqlite.clone()),
@@ -77,7 +78,7 @@ impl App {
             inference_tx,
             running: true,
             sqlite: sqlite.clone(),
-            _ollama: Ollama::new(sqlite, inference_rx, event_tx),
+            _assistant: Assistant::new(llama, sqlite, inference_rx, event_tx),
         }
     }
 
@@ -209,13 +210,8 @@ impl App {
                         // we're able to send only when we have selected conversation
                         if let Some(conversation) = self.conversations.currently_selected() {
                             let user_prompt = self.prompt.get_content();
-                            let user_message = db::create_message(
-                                &self.sqlite,
-                                Role::User,
-                                &user_prompt,
-                                conversation.id,
-                            )
-                            .await?;
+                            let user_message = Message::user(user_prompt, conversation.id);
+
                             self.chat.push_message(user_message.clone());
                             self.inference_tx.send(user_message).await?;
                             self.prompt.clear();

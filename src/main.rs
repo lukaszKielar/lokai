@@ -1,7 +1,8 @@
-use std::{error::Error, io, path::PathBuf, result::Result, sync::LazyLock, time::Duration};
+use std::{error::Error, io, path::PathBuf, result::Result, sync::LazyLock};
 
 use clap::Parser;
 use config::{AppConfig, AppConfigCliArgs};
+use kalosm::language::{Llama, LlamaSource};
 use kalosm_language::kalosm_llama::Cache;
 use kalosm_sound::{Whisper, WhisperLanguage, WhisperSource};
 use ratatui::{backend::CrosstermBackend, Terminal};
@@ -13,13 +14,13 @@ use transcribe::Transcriber;
 use crate::{app::App, event::EventHandler, tui::Tui};
 
 pub mod app;
+pub mod assistant;
 pub mod chat;
 pub mod config;
 pub mod conversations;
 pub mod db;
 pub mod event;
 pub mod models;
-pub mod ollama;
 pub mod prompt;
 pub mod transcribe;
 pub mod tui;
@@ -63,11 +64,6 @@ async fn main() -> AppResult<()> {
         *app_config = cli_args.into();
     }
 
-    if let Err(err) = verify_ollama_server().await {
-        eprintln!("Cannot connect to Ollama server: {:?}", err.to_string());
-        std::process::exit(1);
-    };
-
     let sqlite = setup_sqlite_pool().await?;
 
     let (event_tx, event_rx) = mpsc::unbounded_channel();
@@ -89,7 +85,20 @@ async fn main() -> AppResult<()> {
         Transcriber::new(event_tx.clone(), whisper)
     };
 
-    let mut app: App = App::new(sqlite, event_tx.clone());
+    let llama = {
+        let cache_dir = LOKAI_DIR.join("kalosm_cache");
+        if !cache_dir.exists() {
+            std::fs::create_dir(&cache_dir)?
+        }
+        let cache = Cache::new(cache_dir);
+
+        Llama::builder()
+            .with_source(LlamaSource::llama_3_1_8b_chat().with_cache(cache))
+            .build()
+            .await?
+    };
+
+    let mut app: App = App::new(sqlite, event_tx.clone(), llama);
     app.init().await?;
 
     let mut event_handler = EventHandler::new(250, event_tx, event_rx);
@@ -138,23 +147,4 @@ async fn setup_sqlite_pool() -> AppResult<SqlitePool> {
     sqlx::migrate!().run(&sqlite).await?;
 
     Ok(sqlite)
-}
-
-async fn verify_ollama_server() -> AppResult<()> {
-    // TODO: create APP_STATE that store all different clients I need
-    // introduce similar concept to axum's State
-    let http_client = reqwest::Client::builder()
-        .connect_timeout(Duration::from_secs(5))
-        .build()?;
-
-    let app_config = APP_CONFIG.read().await;
-    let ollama_url = app_config.get_ollama_url();
-
-    let response = http_client.get(ollama_url).send().await?;
-
-    if !response.status().is_success() {
-        return Err("Cannot connect to Ollama server, make sure it's up and running.".into());
-    }
-
-    Ok(())
 }

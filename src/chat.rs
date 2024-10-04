@@ -1,11 +1,12 @@
 use ratatui::widgets::{List, ListItem, Paragraph, ScrollbarState};
 use sqlx::SqlitePool;
 
-use crate::{db, models::Message, AppResult};
+use crate::{models::Message, AppResult};
 
 const BORDER_SIZE: usize = 1;
 
 // TODO: automatically scroll to the bottom when messages are loaded
+// TODO: this has to be wrapper for kalosm::Chat
 pub struct Chat {
     messages: Vec<Message>,
     pub vertical_scrollbar_state: ScrollbarState,
@@ -73,7 +74,8 @@ impl Chat {
     pub async fn load_messages(&mut self, conversation_id: u32) -> AppResult<()> {
         self.reset();
 
-        let messages = db::get_messages(&self.sqlite, conversation_id).await?;
+        // TODO: load history from kalosm::Chat
+        let messages = vec![];
         self.messages = messages;
 
         Ok(())
