@@ -1,7 +1,12 @@
-use std::{error::Error, io, path::PathBuf, result::Result, sync::LazyLock};
+use std::{
+    error::Error,
+    io,
+    result::Result,
+    sync::{Arc, LazyLock},
+};
 
 use clap::Parser;
-use config::{AppConfig, AppConfigCliArgs};
+use config::Config;
 use kalosm::language::{Llama, LlamaSource};
 use kalosm_language::kalosm_llama::Cache;
 use kalosm_sound::{Whisper, WhisperLanguage, WhisperSource};
@@ -28,27 +33,22 @@ pub mod ui;
 
 pub type AppResult<T> = Result<T, Box<dyn Error>>;
 
-static LOKAI_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
-    let lokai_dir = dirs::home_dir()
-        .unwrap_or_else(|| std::env::current_dir().expect("Cannot get current working directory"))
-        .join(".lokai");
+#[derive(Parser)]
+pub struct CliArgs {
+    /// Sqlite database URL ["sqlite::memory:" (in-memory), "sqlite://db.slite3" (persistent), "db.sqlite3" (persitent)]
+    #[arg(long)]
+    database_url: Option<String>,
+}
 
-    if !lokai_dir.exists() {
-        std::fs::create_dir(&lokai_dir)
-            .unwrap_or_else(|_| panic!("cannot create {:?} directory", lokai_dir))
-    }
-
-    lokai_dir
-});
-static APP_CONFIG: LazyLock<RwLock<AppConfig>> = LazyLock::new(|| RwLock::new(AppConfig::init()));
+static CONFIG: LazyLock<Arc<RwLock<Config>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(Config::new())));
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
-    let logs_dir = LOKAI_DIR.join("logs");
-    if !logs_dir.exists() {
-        std::fs::create_dir(&logs_dir)?
-    }
-    let log_file = tracing_appender::rolling::daily(logs_dir, "lokai.log");
+    let log_file = {
+        let logs_dir = CONFIG.read().await.logs_dir();
+        tracing_appender::rolling::daily(logs_dir, "lokai.log")
+    };
     let (non_blocking, _guard) = tracing_appender::non_blocking(log_file);
     tracing_subscriber::fmt()
         .with_max_level(Level::INFO)
@@ -58,25 +58,29 @@ async fn main() -> AppResult<()> {
 
     info!("starting");
 
-    let cli_args = AppConfigCliArgs::parse();
     {
-        let mut app_config = APP_CONFIG.write().await;
-        *app_config = cli_args.into();
+        let cli_args = CliArgs::parse();
+        if let Some(database_url) = cli_args.database_url {
+            let mut config = CONFIG.write().await;
+            config.update_database_url(database_url);
+        }
     }
 
-    let sqlite = setup_sqlite_pool().await?;
+    let sqlite = {
+        let config = CONFIG.read().await;
+        setup_sqlite_pool(config.database_url()).await?
+    };
 
     let (event_tx, event_rx) = mpsc::unbounded_channel();
 
-    let _transcriber = {
-        let cache_dir = LOKAI_DIR.join("kalosm_cache");
-        if !cache_dir.exists() {
-            std::fs::create_dir(&cache_dir)?
-        }
-        let cache = Cache::new(cache_dir);
+    let kalosm_cache = {
+        let kalosm_cache_dir = CONFIG.read().await.kalosm_cache_dir();
+        Cache::new(kalosm_cache_dir)
+    };
 
+    let _transcriber = {
         let whisper = Whisper::builder()
-            .with_cache(cache)
+            .with_cache(kalosm_cache.clone())
             .with_source(WhisperSource::BaseEn)
             .with_language(Some(WhisperLanguage::English))
             .build()
@@ -85,18 +89,10 @@ async fn main() -> AppResult<()> {
         Transcriber::new(event_tx.clone(), whisper)
     };
 
-    let llama = {
-        let cache_dir = LOKAI_DIR.join("kalosm_cache");
-        if !cache_dir.exists() {
-            std::fs::create_dir(&cache_dir)?
-        }
-        let cache = Cache::new(cache_dir);
-
-        Llama::builder()
-            .with_source(LlamaSource::llama_3_1_8b_chat().with_cache(cache))
-            .build()
-            .await?
-    };
+    let llama = Llama::builder()
+        .with_source(LlamaSource::llama_3_1_8b_chat().with_cache(kalosm_cache))
+        .build()
+        .await?;
 
     let mut app: App = App::new(sqlite, event_tx.clone(), llama);
     app.init().await?;
@@ -122,13 +118,9 @@ async fn main() -> AppResult<()> {
     Ok(())
 }
 
-async fn setup_sqlite_pool() -> AppResult<SqlitePool> {
-    {
-        let app_config = APP_CONFIG.read().await;
-        let database_url = app_config.get_database_url();
-        if !sqlx::Sqlite::database_exists(database_url).await? {
-            sqlx::Sqlite::create_database(database_url).await?;
-        }
+async fn setup_sqlite_pool(database_url: &str) -> AppResult<SqlitePool> {
+    if !sqlx::Sqlite::database_exists(database_url).await? {
+        sqlx::Sqlite::create_database(database_url).await?;
     }
 
     let sqlite = SqlitePoolOptions::new()
@@ -140,7 +132,7 @@ async fn setup_sqlite_pool() -> AppResult<SqlitePool> {
                 Ok(())
             })
         })
-        .connect(APP_CONFIG.read().await.get_database_url())
+        .connect(database_url)
         .await
         .expect("Cannot make a DB pool");
 

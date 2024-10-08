@@ -1,48 +1,62 @@
-use clap::Parser;
-use serde::Deserialize;
+use std::path::PathBuf;
 
-use crate::LOKAI_DIR;
-
-#[derive(Deserialize, Debug)]
-pub struct AppConfig {
-    // TODO: rename to sqlite_url
+#[derive(Debug, Clone)]
+pub struct Config {
+    lokai_dir: PathBuf,
     database_url: String,
 }
 
-impl AppConfig {
-    pub fn init() -> Self {
-        Self {
-            database_url: "".to_string(),
-        }
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Config {
+    pub fn new() -> Self {
+        let lokai_dir = dirs::home_dir()
+            .unwrap_or_else(|| {
+                std::env::current_dir().expect("cannot get current working directory")
+            })
+            .join(".lokai");
+
+        create_dir_if_not_exists(&lokai_dir);
+
+        let database_url = format!(
+            "sqlite://{}/db.sqlite",
+            lokai_dir.to_str().expect("cannot create database url")
+        );
+
+        let config = Config {
+            lokai_dir,
+            database_url,
+        };
+
+        create_dir_if_not_exists(&config.logs_dir());
+        create_dir_if_not_exists(&config.kalosm_cache_dir());
+
+        config
     }
 
-    pub fn get_database_url(&self) -> &str {
+    pub fn database_url(&self) -> &str {
         &self.database_url
     }
 
-    pub fn update_from_cli_args(&mut self, cli_args: AppConfigCliArgs) {
-        if let Some(ref database_url) = cli_args.database_url {
-            self.database_url = database_url.to_string();
-        }
+    pub fn logs_dir(&self) -> PathBuf {
+        self.lokai_dir.join("logs")
+    }
+
+    pub fn kalosm_cache_dir(&self) -> PathBuf {
+        self.lokai_dir.join("kalosm_cache")
+    }
+
+    pub fn update_database_url(&mut self, database_url: String) {
+        self.database_url = database_url;
     }
 }
 
-#[derive(Parser)]
-pub struct AppConfigCliArgs {
-    /// Sqlite database URL ["sqlite::memory:" (in-memory), "sqlite://db.slite3" (persistent), "db.sqlite3" (persitent)]
-    #[arg(long)]
-    database_url: Option<String>,
-}
-
-impl From<AppConfigCliArgs> for AppConfig {
-    fn from(value: AppConfigCliArgs) -> Self {
-        Self {
-            database_url: value.database_url.unwrap_or_else(|| {
-                format!(
-                    "sqlite://{}/db.sqlite",
-                    LOKAI_DIR.to_str().expect("Cannot get lokai config dir")
-                )
-            }),
-        }
+fn create_dir_if_not_exists(path: &PathBuf) {
+    if !path.exists() {
+        std::fs::create_dir(path).unwrap_or_else(|_| panic!("cannot create dir: {path:?}"));
     }
 }
