@@ -9,7 +9,7 @@ use tokio::{
 use crate::{
     db,
     event::{Event, InferenceType},
-    models::Message,
+    models::{Message, Role},
     AppResult,
 };
 
@@ -42,10 +42,15 @@ async fn inference_stream(
 ) -> AppResult<()> {
     while let Some(inference_message) = inference_rx.recv().await {
         let conversation = db::get_conversation(&sqlite, inference_message.conversation_id).await?;
-        let mut chat = Chat::new(llama.clone());
+
+        // TODO: create cache object that could keep different chats in memory for some time and load it when necessary
+        let mut chat = Chat::builder(llama.clone())
+            .with_try_session_path(&conversation.local_path)
+            .build();
         let mut text_stream = chat.add_message(inference_message.content);
 
-        let mut assistant_response = Message::assistant(String::new(), conversation.id);
+        let mut assistant_response =
+            db::create_message(&sqlite, Role::Assistant, "", conversation.id).await?;
 
         while let Some(chunk) = text_stream.next().await {
             assistant_response.content.push_str(&chunk);
@@ -55,6 +60,19 @@ async fn inference_stream(
                 InferenceType::Streaming,
             ))?;
         }
+
+        let assistant_response =
+            db::update_message(&sqlite, &assistant_response.content, assistant_response.id).await?;
+        chat.add_message(assistant_response.content);
+
+        // TODO: handle errors
+        tokio::spawn(async move {
+            match chat.save_session(&conversation.local_path).await {
+                Ok(_) => tracing::info!("session saved to disk"),
+                Err(err) => tracing::error!("Error while saving session: {}", err),
+            }
+        })
+        .await;
     }
 
     Ok(())

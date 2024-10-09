@@ -57,8 +57,8 @@ impl Config {
         self.lokai_dir.join("chats")
     }
 
-    pub fn random_chat_path(&self) -> PathBuf {
-        self.chats_dir().join(Uuid::new_v4().to_string())
+    pub fn random_session_path(&self) -> PathBuf {
+        self.chats_dir().join(format!("{}.llama", Uuid::new_v4()))
     }
 
     pub fn update_database_url(&mut self, database_url: String) {

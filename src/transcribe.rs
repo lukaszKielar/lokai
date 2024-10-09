@@ -11,7 +11,7 @@ use tracing::info;
 use crate::event::Event;
 
 pub struct Transcriber {
-    join_handle: JoinHandle<()>,
+    _join_handle: JoinHandle<()>,
 }
 
 impl Transcriber {
@@ -39,6 +39,8 @@ impl Transcriber {
             }
         });
 
-        Self { join_handle }
+        Self {
+            _join_handle: join_handle,
+        }
     }
 }

@@ -14,6 +14,7 @@ use ratatui::{backend::CrosstermBackend, Terminal};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Executor, SqlitePool};
 use tokio::sync::{mpsc, RwLock};
 use tracing::{info, Level};
+use tracing_subscriber::EnvFilter;
 use transcribe::Transcriber;
 
 use crate::{app::App, event::EventHandler, tui::Tui};
@@ -54,6 +55,7 @@ async fn main() -> AppResult<()> {
         .with_max_level(Level::INFO)
         .with_writer(non_blocking)
         .with_ansi(false)
+        .with_env_filter(EnvFilter::from_default_env())
         .init();
 
     info!("starting");

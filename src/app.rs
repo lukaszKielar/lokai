@@ -11,7 +11,7 @@ use crate::{
     event::{Event, InferenceType},
     models::{Message, Role},
     prompt::Prompt,
-    AppResult,
+    AppResult, CONFIG,
 };
 
 #[derive(Copy, Clone)]
@@ -51,8 +51,7 @@ pub struct App {
     pub chat: Chat,
     pub conversations: Conversations,
     pub prompt: Prompt,
-    // TODO: currently both popups can co-exist, it has to change
-    // there can be one popup at a time
+    // TODO: currently both popups can co-exist, it has to change there can be one popup at a time
     // TODO: I cannot allow empty conversation
     pub new_conversation_popup: NewConversationPopup,
     pub delete_conversation_popup: DeleteConversationPopup,
@@ -179,8 +178,16 @@ impl App {
                     // e.g. when content of the popup is an empty string I want to show to the user
                     // message that it cannot be null, as well as use red color to indicate problem
                     if let Some(conversation_name) = self.new_conversation_popup.get_content() {
+                        let local_path = {
+                            let chat_path = CONFIG.read().await.random_session_path();
+                            chat_path
+                                .to_str()
+                                .expect("cannot convert to path to string")
+                                .to_string()
+                        };
                         let new_conversation =
-                            db::create_conversation(&self.sqlite, conversation_name).await?;
+                            db::create_conversation(&self.sqlite, conversation_name, &local_path)
+                                .await?;
                         self.conversations.push(new_conversation);
                         self.new_conversation_popup.deactivate();
                     }
@@ -210,7 +217,13 @@ impl App {
                         // we're able to send only when we have selected conversation
                         if let Some(conversation) = self.conversations.currently_selected() {
                             let user_prompt = self.prompt.get_content();
-                            let user_message = Message::user(user_prompt, conversation.id);
+                            let user_message = db::create_message(
+                                &self.sqlite,
+                                Role::User,
+                                &user_prompt,
+                                conversation.id,
+                            )
+                            .await?;
 
                             self.chat.push_message(user_message.clone());
                             self.inference_tx.send(user_message).await?;
