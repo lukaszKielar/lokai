@@ -1,7 +1,7 @@
 use ratatui::widgets::{List, ListItem, Paragraph, ScrollbarState};
 use sqlx::SqlitePool;
 
-use crate::{models::Message, AppResult};
+use crate::{db, models::Message, AppResult};
 
 const BORDER_SIZE: usize = 1;
 
@@ -74,8 +74,7 @@ impl Chat {
     pub async fn load_messages(&mut self, conversation_id: u32) -> AppResult<()> {
         self.reset();
 
-        // TODO: load history from kalosm::Chat
-        let messages = vec![];
+        let messages = db::get_messages(&self.sqlite, conversation_id).await?;
         self.messages = messages;
 
         Ok(())
