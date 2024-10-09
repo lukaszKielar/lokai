@@ -178,7 +178,7 @@ impl App {
                     // e.g. when content of the popup is an empty string I want to show to the user
                     // message that it cannot be null, as well as use red color to indicate problem
                     if let Some(conversation_name) = self.new_conversation_popup.get_content() {
-                        let local_path = {
+                        let session_path = {
                             let chat_path = CONFIG.read().await.random_session_path();
                             chat_path
                                 .to_str()
@@ -186,7 +186,7 @@ impl App {
                                 .to_string()
                         };
                         let new_conversation =
-                            db::create_conversation(&self.sqlite, conversation_name, &local_path)
+                            db::create_conversation(&self.sqlite, conversation_name, &session_path)
                                 .await?;
                         self.conversations.push(new_conversation);
                         self.new_conversation_popup.deactivate();

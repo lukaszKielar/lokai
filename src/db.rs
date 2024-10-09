@@ -45,19 +45,19 @@ where
 pub async fn create_conversation<'e, E>(
     executor: E,
     name: &str,
-    local_path: &str,
+    session_path: &str,
 ) -> AppResult<Conversation>
 where
     E: Executor<'e, Database = Sqlite>,
 {
     let conversation = sqlx::query_as(
         r#"
-        INSERT INTO conversations(name, local_path) VALUES (?1, ?2)
+        INSERT INTO conversations(name, session_path) VALUES (?1, ?2)
         RETURNING *
         "#,
     )
     .bind(name)
-    .bind(local_path)
+    .bind(session_path)
     .persistent(false)
     .fetch_one(executor)
     .await?;
@@ -209,7 +209,7 @@ mod tests {
                 Conversation {
                     id: 1,
                     name: "conversation 1".to_string(),
-                    local_path: "~/.lokai/chats/1".to_string(),
+                    session_path: "~/.lokai/chats/1".to_string(),
                     created_at: DateTime::parse_from_rfc3339("2024-09-13T09:00:00Z")
                         .unwrap()
                         .into()
@@ -217,7 +217,7 @@ mod tests {
                 Conversation {
                     id: 2,
                     name: "conversation 2".to_string(),
-                    local_path: "~/.lokai/chats/2".to_string(),
+                    session_path: "~/.lokai/chats/2".to_string(),
                     created_at: DateTime::parse_from_rfc3339("2024-09-13T09:00:59Z")
                         .unwrap()
                         .into()
@@ -225,7 +225,7 @@ mod tests {
                 Conversation {
                     id: 3,
                     name: "conversation 3".to_string(),
-                    local_path: "~/.lokai/chats/3".to_string(),
+                    session_path: "~/.lokai/chats/3".to_string(),
                     created_at: DateTime::parse_from_rfc3339("2024-09-13T09:01:00Z")
                         .unwrap()
                         .into()
@@ -233,7 +233,7 @@ mod tests {
                 Conversation {
                     id: 4,
                     name: "conversation 4".to_string(),
-                    local_path: "~/.lokai/chats/4".to_string(),
+                    session_path: "~/.lokai/chats/4".to_string(),
                     created_at: DateTime::parse_from_rfc3339("2024-09-13T09:01:00Z")
                         .unwrap()
                         .into()
@@ -284,7 +284,7 @@ mod tests {
             Conversation {
                 id: 1,
                 name: "conversation 1".to_string(),
-                local_path: "~/.lokai/chats/1".to_string(),
+                session_path: "~/.lokai/chats/1".to_string(),
                 created_at: DateTime::parse_from_rfc3339("2024-09-13T09:00:00Z")
                     .unwrap()
                     .into()

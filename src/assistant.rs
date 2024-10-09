@@ -45,7 +45,7 @@ async fn inference_stream(
 
         // TODO: create cache object that could keep different chats in memory for some time and load it when necessary
         let mut chat = Chat::builder(llama.clone())
-            .with_try_session_path(&conversation.local_path)
+            .with_try_session_path(&conversation.session_path)
             .build();
         let mut text_stream = chat.add_message(inference_message.content);
 
@@ -67,7 +67,7 @@ async fn inference_stream(
 
         // TODO: handle errors
         tokio::spawn(async move {
-            match chat.save_session(&conversation.local_path).await {
+            match chat.save_session(&conversation.session_path).await {
                 Ok(_) => tracing::info!("session saved to disk"),
                 Err(err) => tracing::error!("Error while saving session: {}", err),
             }

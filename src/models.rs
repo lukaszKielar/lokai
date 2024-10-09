@@ -6,8 +6,7 @@ use sqlx::{sqlite::SqliteRow, FromRow, Row};
 pub struct Conversation {
     pub id: u32,
     pub name: String,
-    // TODO: rename to session_path
-    pub local_path: String,
+    pub session_path: String,
     pub created_at: DateTime<Utc>,
 }
 

@@ -33,7 +33,7 @@ impl Conversations {
         {
             tracing::info!("deleting conversation: {:?}", conversation.id);
             self.conversations.remove(index);
-            if std::fs::remove_file(PathBuf::from(conversation.local_path)).is_err() {
+            if std::fs::remove_file(PathBuf::from(conversation.session_path)).is_err() {
                 tracing::error!(
                     "cannot delete session for conversation: {:?}",
                     conversation.id
