@@ -1,4 +1,7 @@
-use std::ops::{Deref, DerefMut};
+use std::{
+    ops::{Deref, DerefMut},
+    path::PathBuf,
+};
 
 use crossterm::event::KeyEvent;
 use ratatui::widgets::{List, ListItem, ListState};
@@ -28,7 +31,14 @@ impl Conversations {
             .iter()
             .position(|c| c.id == conversation.id)
         {
+            tracing::info!("deleting conversation: {:?}", conversation.id);
             self.conversations.remove(index);
+            if std::fs::remove_file(PathBuf::from(conversation.local_path)).is_err() {
+                tracing::error!(
+                    "cannot delete session for conversation: {:?}",
+                    conversation.id
+                );
+            }
             self.unselect();
         }
     }
