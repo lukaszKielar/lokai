@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use uuid::Uuid;
+
 #[derive(Debug, Clone)]
 pub struct Config {
     lokai_dir: PathBuf,
@@ -23,7 +25,7 @@ impl Config {
         create_dir_if_not_exists(&lokai_dir);
 
         let database_url = format!(
-            "sqlite://{}/db.sqlite",
+            "sqlite://{}/db.sqlite3",
             lokai_dir.to_str().expect("cannot create database url")
         );
 
@@ -34,6 +36,7 @@ impl Config {
 
         create_dir_if_not_exists(&config.logs_dir());
         create_dir_if_not_exists(&config.kalosm_cache_dir());
+        create_dir_if_not_exists(&config.chats_dir());
 
         config
     }
@@ -48,6 +51,14 @@ impl Config {
 
     pub fn kalosm_cache_dir(&self) -> PathBuf {
         self.lokai_dir.join("kalosm_cache")
+    }
+
+    pub fn chats_dir(&self) -> PathBuf {
+        self.lokai_dir.join("chats")
+    }
+
+    pub fn random_chat_path(&self) -> PathBuf {
+        self.chats_dir().join(Uuid::new_v4().to_string())
     }
 
     pub fn update_database_url(&mut self, database_url: String) {
