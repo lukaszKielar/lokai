@@ -39,6 +39,9 @@ pub struct CliArgs {
     /// Sqlite database URL ["sqlite::memory:" (in-memory), "sqlite://db.slite3" (persistent), "db.sqlite3" (persitent)]
     #[arg(long)]
     database_url: Option<String>,
+    /// Enables prompt transcription
+    #[arg(long, action = clap::ArgAction::SetTrue)]
+    enable_transcription: bool,
 }
 
 static CONFIG: LazyLock<Arc<RwLock<Config>>> =
@@ -60,11 +63,11 @@ async fn main() -> AppResult<()> {
 
     info!("starting");
 
+    let cli_args = CliArgs::parse();
     {
-        let cli_args = CliArgs::parse();
-        if let Some(database_url) = cli_args.database_url {
+        if let Some(database_url) = &cli_args.database_url {
             let mut config = CONFIG.write().await;
-            config.update_database_url(database_url);
+            config.update_database_url(database_url.clone());
         }
     }
 
@@ -81,14 +84,18 @@ async fn main() -> AppResult<()> {
     };
 
     let _transcriber = {
-        let whisper = Whisper::builder()
-            .with_cache(kalosm_cache.clone())
-            .with_source(WhisperSource::BaseEn)
-            .with_language(Some(WhisperLanguage::English))
-            .build()
-            .await?;
+        if cli_args.enable_transcription {
+            let whisper = Whisper::builder()
+                .with_cache(kalosm_cache.clone())
+                .with_source(WhisperSource::BaseEn)
+                .with_language(Some(WhisperLanguage::English))
+                .build()
+                .await?;
 
-        Transcriber::new(event_tx.clone(), whisper)
+            Some(Transcriber::new(event_tx.clone(), whisper))
+        } else {
+            None
+        }
     };
 
     let llama = Llama::builder()
