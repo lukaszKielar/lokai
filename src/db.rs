@@ -5,6 +5,25 @@ use crate::{
     AppResult,
 };
 
+pub async fn get_conversation<'e, E>(executor: E, conversation_id: u32) -> AppResult<Conversation>
+where
+    E: Executor<'e, Database = Sqlite>,
+{
+    let conversation = sqlx::query_as(
+        r#"
+        SELECT *
+        FROM conversations
+        WHERE id = ?1
+        "#,
+    )
+    .bind(conversation_id)
+    .persistent(false)
+    .fetch_one(executor)
+    .await?;
+
+    Ok(conversation)
+}
+
 pub async fn get_conversations<'e, E>(executor: E) -> AppResult<Vec<Conversation>>
 where
     E: Executor<'e, Database = Sqlite>,
@@ -23,17 +42,22 @@ where
     Ok(items)
 }
 
-pub async fn create_conversation<'e, E>(executor: E, name: &str) -> AppResult<Conversation>
+pub async fn create_conversation<'e, E>(
+    executor: E,
+    name: &str,
+    session_path: &str,
+) -> AppResult<Conversation>
 where
     E: Executor<'e, Database = Sqlite>,
 {
     let conversation = sqlx::query_as(
         r#"
-        INSERT INTO conversations(name) VALUES (?1)
+        INSERT INTO conversations(name, session_path) VALUES (?1, ?2)
         RETURNING *
         "#,
     )
     .bind(name)
+    .bind(session_path)
     .persistent(false)
     .fetch_one(executor)
     .await?;
@@ -139,6 +163,8 @@ mod tests {
     use chrono::DateTime;
     use sqlx::{Row, SqlitePool};
 
+    use crate::models::Role;
+
     use super::*;
 
     async fn table_count<'e, E>(executor: E, table_name: &str) -> AppResult<i64>
@@ -183,6 +209,7 @@ mod tests {
                 Conversation {
                     id: 1,
                     name: "conversation 1".to_string(),
+                    session_path: "~/.lokai/chats/1".to_string(),
                     created_at: DateTime::parse_from_rfc3339("2024-09-13T09:00:00Z")
                         .unwrap()
                         .into()
@@ -190,6 +217,7 @@ mod tests {
                 Conversation {
                     id: 2,
                     name: "conversation 2".to_string(),
+                    session_path: "~/.lokai/chats/2".to_string(),
                     created_at: DateTime::parse_from_rfc3339("2024-09-13T09:00:59Z")
                         .unwrap()
                         .into()
@@ -197,6 +225,7 @@ mod tests {
                 Conversation {
                     id: 3,
                     name: "conversation 3".to_string(),
+                    session_path: "~/.lokai/chats/3".to_string(),
                     created_at: DateTime::parse_from_rfc3339("2024-09-13T09:01:00Z")
                         .unwrap()
                         .into()
@@ -204,6 +233,7 @@ mod tests {
                 Conversation {
                     id: 4,
                     name: "conversation 4".to_string(),
+                    session_path: "~/.lokai/chats/4".to_string(),
                     created_at: DateTime::parse_from_rfc3339("2024-09-13T09:01:00Z")
                         .unwrap()
                         .into()
@@ -221,8 +251,10 @@ mod tests {
 
         // when
         let mut transaction = pool.begin().await?;
-        let new_conversation_1 = create_conversation(&mut *transaction, "conversation 1").await?;
-        let new_conversation_2 = create_conversation(&mut *transaction, "conversation 2").await?;
+        let new_conversation_1 =
+            create_conversation(&mut *transaction, "conversation 1", "~/.lokai/chats/1").await?;
+        let new_conversation_2 =
+            create_conversation(&mut *transaction, "conversation 2", "~/.lokai/chats/1").await?;
         transaction.commit().await?;
 
         // then
@@ -252,6 +284,7 @@ mod tests {
             Conversation {
                 id: 1,
                 name: "conversation 1".to_string(),
+                session_path: "~/.lokai/chats/1".to_string(),
                 created_at: DateTime::parse_from_rfc3339("2024-09-13T09:00:00Z")
                     .unwrap()
                     .into()

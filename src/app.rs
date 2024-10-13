@@ -1,16 +1,17 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use kalosm::language::Llama;
 use sqlx::SqlitePool;
 use tokio::sync::mpsc::{self, Sender, UnboundedSender};
 
 use crate::{
+    assistant::Assistant,
     chat::Chat,
     conversations::{Conversations, DeleteConversationPopup, NewConversationPopup},
     db,
     event::{Event, InferenceType},
     models::{Message, Role},
-    ollama::Ollama,
     prompt::Prompt,
-    AppResult,
+    AppResult, CONFIG,
 };
 
 #[derive(Copy, Clone)]
@@ -50,8 +51,7 @@ pub struct App {
     pub chat: Chat,
     pub conversations: Conversations,
     pub prompt: Prompt,
-    // TODO: currently both popups can co-exist, it has to change
-    // there can be one popup at a time
+    // TODO: currently both popups can co-exist, it has to change there can be one popup at a time
     // TODO: I cannot allow empty conversation
     pub new_conversation_popup: NewConversationPopup,
     pub delete_conversation_popup: DeleteConversationPopup,
@@ -60,11 +60,11 @@ pub struct App {
     inference_tx: Sender<Message>,
     running: bool,
     sqlite: SqlitePool,
-    _ollama: Ollama,
+    _assistant: Assistant,
 }
 
 impl App {
-    pub fn new(sqlite: SqlitePool, event_tx: UnboundedSender<Event>) -> Self {
+    pub fn new(sqlite: SqlitePool, event_tx: UnboundedSender<Event>, llama: Llama) -> Self {
         let (inference_tx, inference_rx) = mpsc::channel::<Message>(10);
         Self {
             chat: Chat::new(sqlite.clone()),
@@ -77,7 +77,7 @@ impl App {
             inference_tx,
             running: true,
             sqlite: sqlite.clone(),
-            _ollama: Ollama::new(sqlite, inference_rx, event_tx),
+            _assistant: Assistant::new(llama, sqlite, inference_rx, event_tx),
         }
     }
 
@@ -178,8 +178,16 @@ impl App {
                     // e.g. when content of the popup is an empty string I want to show to the user
                     // message that it cannot be null, as well as use red color to indicate problem
                     if let Some(conversation_name) = self.new_conversation_popup.get_content() {
+                        let session_path = {
+                            let chat_path = CONFIG.read().await.random_session_path();
+                            chat_path
+                                .to_str()
+                                .expect("cannot convert to path to string")
+                                .to_string()
+                        };
                         let new_conversation =
-                            db::create_conversation(&self.sqlite, conversation_name).await?;
+                            db::create_conversation(&self.sqlite, conversation_name, &session_path)
+                                .await?;
                         self.conversations.push(new_conversation);
                         self.new_conversation_popup.deactivate();
                     }
@@ -216,6 +224,7 @@ impl App {
                                 conversation.id,
                             )
                             .await?;
+
                             self.chat.push_message(user_message.clone());
                             self.inference_tx.send(user_message).await?;
                             self.prompt.clear();
@@ -283,12 +292,12 @@ impl App {
                 if !self.new_conversation_popup.is_activated() {
                     self.next_focus()
                 }
-            },
+            }
             KeyCode::BackTab => {
                 if !self.new_conversation_popup.is_activated() {
                     self.previous_focus()
                 }
-            },
+            }
             KeyCode::Delete => {
                 if let AppFocus::Conversation = self.current_focus() {
                     if self.conversations.currently_selected().is_some() {
@@ -352,6 +361,12 @@ impl App {
         Ok(())
     }
 
+    async fn handle_prompt_transcription(&mut self, word: String) -> AppResult<()> {
+        self.prompt.insert_str(word);
+
+        Ok(())
+    }
+
     pub async fn handle_events(&mut self, event: Event) -> AppResult<()> {
         match event {
             Event::TerminalTick => Ok(()),
@@ -363,6 +378,7 @@ impl App {
                 self.handle_inference_event(message).await
             }
             Event::ChatBottomScroll => self.handle_chat_bottom_scroll_event().await,
+            Event::PromptTranscription(word) => self.handle_prompt_transcription(word).await,
         }
     }
 }

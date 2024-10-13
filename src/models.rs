@@ -6,8 +6,12 @@ use sqlx::{sqlite::SqliteRow, FromRow, Row};
 pub struct Conversation {
     pub id: u32,
     pub name: String,
+    pub session_path: String,
     pub created_at: DateTime<Utc>,
 }
+
+// TODO: implement load and save methods
+impl Conversation {}
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Role {

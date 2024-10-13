@@ -22,6 +22,7 @@ pub enum Event {
     Key(KeyEvent),
     Inference(Message, InferenceType),
     ChatBottomScroll,
+    PromptTranscription(String),
 }
 
 #[allow(dead_code)]
