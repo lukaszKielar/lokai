@@ -10,9 +10,6 @@ pub struct Conversation {
     pub created_at: DateTime<Utc>,
 }
 
-// TODO: implement load and save methods
-impl Conversation {}
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Role {
     #[serde(rename = "assistant")]

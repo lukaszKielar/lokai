@@ -1,10 +1,7 @@
 use futures::StreamExt;
 use kalosm::language::{Chat, Llama};
 use sqlx::SqlitePool;
-use tokio::{
-    sync::mpsc::{Receiver, UnboundedSender},
-    task::JoinHandle,
-};
+use tokio::sync::mpsc::{Receiver, UnboundedSender};
 
 use crate::{
     db,
@@ -13,24 +10,18 @@ use crate::{
     AppResult,
 };
 
-pub struct Assistant {
-    _join_handle: JoinHandle<()>,
-}
+pub struct Assistant;
 
 impl Assistant {
-    pub fn new(
+    pub fn run(
         llama: Llama,
         sqlite: SqlitePool,
         inference_rx: Receiver<Message>,
         event_tx: UnboundedSender<Event>,
-    ) -> Self {
-        let join_handle = tokio::spawn(async move {
+    ) {
+        tokio::spawn(async move {
             inference_stream(sqlite, inference_rx, event_tx, llama).await;
         });
-
-        Self {
-            _join_handle: join_handle,
-        }
     }
 }
 
@@ -55,24 +46,25 @@ async fn inference_stream(
         while let Some(chunk) = text_stream.next().await {
             assistant_response.content.push_str(&chunk);
 
-            event_tx.send(Event::Inference(
+            // ignore send errors, I can at least wait until the end of assistant's response and save it to db
+            // if the channel is closed we probably paniced anyway
+            let _ = event_tx.send(Event::Inference(
                 assistant_response.clone(),
                 InferenceType::Streaming,
-            ))?;
+            ));
         }
 
         let assistant_response =
             db::update_message(&sqlite, &assistant_response.content, assistant_response.id).await?;
         chat.add_message(assistant_response.content);
 
-        // TODO: handle errors
         tokio::spawn(async move {
             match chat.save_session(&conversation.session_path).await {
                 Ok(_) => tracing::info!("session saved to disk"),
                 Err(err) => tracing::error!("Error while saving session: {}", err),
             }
         })
-        .await;
+        .await?;
     }
 
     Ok(())
