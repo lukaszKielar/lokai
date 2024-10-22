@@ -83,7 +83,6 @@ impl Conversations {
     }
 }
 
-// TODO: add internal attribute that will define error style and message
 pub struct NewConversationPopup {
     text: Option<String>,
     text_area: TextArea<'static>,

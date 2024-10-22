@@ -45,8 +45,6 @@ impl AppFocus {
     }
 }
 
-// TODO: create shared AppState(SqlitePool)
-
 pub struct App {
     pub chat: Chat,
     pub conversations: Conversations,
@@ -60,12 +58,13 @@ pub struct App {
     inference_tx: Sender<Message>,
     running: bool,
     sqlite: SqlitePool,
-    _assistant: Assistant,
 }
 
 impl App {
     pub fn new(sqlite: SqlitePool, event_tx: UnboundedSender<Event>, llama: Llama) -> Self {
         let (inference_tx, inference_rx) = mpsc::channel::<Message>(10);
+        Assistant::run(llama, sqlite.clone(), inference_rx, event_tx.clone());
+
         Self {
             chat: Chat::new(sqlite.clone()),
             conversations: Conversations::new(sqlite.clone()),
@@ -73,11 +72,10 @@ impl App {
             new_conversation_popup: Default::default(),
             delete_conversation_popup: Default::default(),
             focus: Default::default(),
-            event_tx: event_tx.clone(),
+            event_tx,
             inference_tx,
             running: true,
-            sqlite: sqlite.clone(),
-            _assistant: Assistant::new(llama, sqlite, inference_rx, event_tx),
+            sqlite,
         }
     }
 

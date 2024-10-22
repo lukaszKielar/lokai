@@ -15,7 +15,7 @@ use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Executor, Sqlite
 use tokio::sync::{mpsc, RwLock};
 use tracing::{info, Level};
 use tracing_subscriber::EnvFilter;
-use transcribe::Transcriber;
+use transcribe::transcribe;
 
 use crate::{app::App, event::EventHandler, tui::Tui};
 
@@ -83,20 +83,16 @@ async fn main() -> AppResult<()> {
         Cache::new(kalosm_cache_dir)
     };
 
-    let _transcriber = {
-        if cli_args.enable_transcription {
-            let whisper = Whisper::builder()
-                .with_cache(kalosm_cache.clone())
-                .with_source(WhisperSource::BaseEn)
-                .with_language(Some(WhisperLanguage::English))
-                .build()
-                .await?;
+    if cli_args.enable_transcription {
+        let whisper = Whisper::builder()
+            .with_cache(kalosm_cache.clone())
+            .with_source(WhisperSource::BaseEn)
+            .with_language(Some(WhisperLanguage::English))
+            .build()
+            .await?;
 
-            Some(Transcriber::new(event_tx.clone(), whisper))
-        } else {
-            None
-        }
-    };
+        transcribe(event_tx.clone(), whisper)
+    }
 
     let llama = Llama::builder()
         .with_source(LlamaSource::llama_3_1_8b_chat().with_cache(kalosm_cache))

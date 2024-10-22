@@ -124,7 +124,6 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     );
     frame.render_widget(&*app.prompt, messages_layout[1]);
 
-    // TODO: dimm other components when popup is active
     if app.new_conversation_popup.is_activated() {
         let (popup_width, popup_height) = (50, 3);
         let (popup_x, popup_y) =
